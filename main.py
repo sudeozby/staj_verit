@@ -1,3 +1,4 @@
+#business logic layer(veri işleyen yer)
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -6,18 +7,30 @@ from dotenv import load_dotenv
 load_dotenv()
 db_password = os.getenv("DB_PASSWORD")
 
+
+# Fonksiyonun tanımı
+def veri_ekle(hiz, irtifa):
+    try:
+        
 # Bağlantı kur
 #hata yönetimi
-try:
-    conn = psycopg2.connect(
-        #şifreleri .env dosyasında okuduğu için güvenli olur
-        dbname="postgres",
-        user="postgres",
-        password=db_password,
-        host="localhost",
-        port="5432"
-    )
-    print("Bağlantı başarılı! Veritabanı ile konuşabiliyoruz.")
-    conn.close()
-except Exception as e:
-    print(f"Hata oluştu: {e}")
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user="postgres",
+            password=db_password,
+            host="localhost",
+            port="5432"
+        )
+          #şifreleri .env dosyasında okuduğu için güvenli olur
+        cur = conn.cursor()
+        # SQL komutu: %s olan yerlere hiz ve irtifa değerlerini takıyoruz
+        cur.execute("INSERT INTO telemetri (hiz, irtifa) VALUES (%s, %s)", (hiz, irtifa))
+        conn.commit() 
+        print(f"Başarıyla eklendi: Hız={hiz}, İrtifa={irtifa}")
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+
+# Fonksiyonu burada çağırıyoruz
+veri_ekle(150.5, 500.0)

@@ -3,3 +3,4 @@ CREATE TABLE telemetri (
     hiz REAL,
     irtifa REAL
 );
+--datalayer (veri saklayan yer)
