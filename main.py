@@ -15,12 +15,12 @@ def veri_ekle(hiz, irtifa):
 # Bağlantı kur
 #hata yönetimi
         conn = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password=db_password,
-            host="localhost",
-            port="5432"
-        )
+    dbname=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"), # Burası sunucuya geçince 'db' veya IP adresi olacak
+    port=os.getenv("DB_PORT")
+)
           #şifreleri .env dosyasında okuduğu için güvenli olur
         cur = conn.cursor()
         # SQL komutu: %s olan yerlere hiz ve irtifa değerlerini takıyoruz
