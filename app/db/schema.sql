@@ -1,4 +1,5 @@
---datalayer (veri saklayan yer)
+-- datalayer (veri saklayan yer) - GÜNCELLENMİŞ CPQ MİMARİSİ
+-- iskonto eklendi
 -- 1. KURLAR TABLOSU
 CREATE TABLE kurlar (
     id SERIAL PRIMARY KEY,
@@ -18,7 +19,16 @@ CREATE TABLE projeler (
     olusturulma_tarihi DATE DEFAULT CURRENT_DATE
 );
 
--- 3. MALZEMELER TABLOSU
+-- 3. YENİ: İSKONTO GRUPLARI TABLOSU (Hesaplama Motorunun Kalbi)
+CREATE TABLE grup_iskontolar (
+    id SERIAL PRIMARY KEY,
+    grup_adi VARCHAR(100) UNIQUE NOT NULL,
+    maliyet_iskonto DECIMAL(5, 4) DEFAULT 0.0000,
+    proje_iskonto DECIMAL(5, 4) DEFAULT 0.0000, 
+    satis_iskonto DECIMAL(5, 4) DEFAULT 0.0000
+);
+
+-- 4. MALZEMELER TABLOSU (Güncellendi)
 CREATE TABLE malzemeler (
     id SERIAL PRIMARY KEY,
     siparis_kodu VARCHAR(100) UNIQUE NOT NULL,
@@ -28,16 +38,17 @@ CREATE TABLE malzemeler (
     tedarikci VARCHAR(255),
     liste_fiyati DECIMAL(15, 2) NOT NULL,
     para_birimi_id INT REFERENCES kurlar(id), 
-    iskonto_orani DECIMAL(5, 2) DEFAULT 0.00  
+    -- Artık tek bir iskonto yok, malzeme bir İskonto Grubuna bağlanıyor
+    grup_iskonto_id INT REFERENCES grup_iskontolar(id) ON DELETE SET NULL  
 );
 
--- 4. MAKROLAR TABLOSU (Şablonlar)
+-- 5. MAKROLAR TABLOSU (Şablonlar)
 CREATE TABLE makrolar (
     id SERIAL PRIMARY KEY,
     makro_adi VARCHAR(255) NOT NULL UNIQUE
 );
 
--- 5. MAKRO İÇERİKLERİ
+-- 6. MAKRO İÇERİKLERİ
 CREATE TABLE makro_icerikleri (
     id SERIAL PRIMARY KEY,
     makro_id INT REFERENCES makrolar(id) ON DELETE CASCADE,
@@ -45,7 +56,7 @@ CREATE TABLE makro_icerikleri (
     adet INT DEFAULT 1
 );
 
--- 6. PROJE PANO MALZEME LİSTESİ (ADP, MCC vb.)
+-- 7. PROJE PANO MALZEME LİSTESİ (ADP, MCC vb.)
 CREATE TABLE proje_pano_listesi (
     id SERIAL PRIMARY KEY,
     proje_id INT REFERENCES projeler(id) ON DELETE CASCADE,
@@ -54,4 +65,3 @@ CREATE TABLE proje_pano_listesi (
     adet INT NOT NULL,
     eklenme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
