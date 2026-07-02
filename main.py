@@ -1,36 +1,45 @@
 #business logic layer(veri işleyen yer)
-import psycopg2
-import os
-from dotenv import load_dotenv
+
 #birden fazla dosya açtık sınıflama oluşturduk ki her table gelip main.py da yığılmasın
-# .env dosyasındaki şifreyi oku
-load_dotenv()
-db_password = os.getenv("DB_PASSWORD")
 
+from fastapi import FastAPI, HTTPException
+from database import get_db_connection
 
-# Fonksiyonun tanımı
-def veri_ekle(hiz, irtifa):
+# FastAPI uygulamasını başlat
+app = FastAPI(title="Envanter ve Proje Takip API")
+
+@app.get("/")
+def ana_sayfa():
+    return {"mesaj": "Sistem başarıyla çalışıyor. Arayüz buradan veri çekebilir."}
+
+@app.get("/projeler")
+def projeleri_getir():
+    """
+    Veritabanındaki tüm projeleri çeker ve arayüze liste olarak gönderir.
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Veritabanına bağlanılamadı.")
+    
     try:
-        
-# Bağlantı kur
-#hata yönetimi
-        conn = psycopg2.connect(
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST"), # Burası sunucuya geçince 'db' veya IP adresi olacak
-    port=os.getenv("DB_PORT")
-)
-          #şifreleri .env dosyasında okuduğu için güvenli olur
         cur = conn.cursor()
-        # SQL komutu: %s olan yerlere hiz ve irtifa değerlerini takıyoruz
-        cur.execute("INSERT INTO telemetri (hiz, irtifa) VALUES (%s, %s)", (hiz, irtifa))
-        conn.commit() 
-        print(f"Başarıyla eklendi: Hız={hiz}, İrtifa={irtifa}")
+        # Projeler tablosundaki verileri çek
+        cur.execute("SELECT id, proje_adi, musteri, lokasyon FROM projeler;")
+        kayitlar = cur.fetchall()
+        
+        # Arayüzün anlayacağı JSON (sözlük) formatına çevir
+        projeler_listesi = []
+        for kayit in kayitlar:
+            projeler_listesi.append({
+                "id": kayit[0],
+                "proje_adi": kayit[1],
+                "musteri": kayit[2],
+                "lokasyon": kayit[3]
+            })
+            
         cur.close()
         conn.close()
+        return {"projeler": projeler_listesi}
+        
     except Exception as e:
-        print(f"Hata oluştu: {e}")
-
-# Fonksiyonu burada çağırıyoruz
-veri_ekle(150.5, 500.0)
+        raise HTTPException(status_code=500, detail=str(e))
