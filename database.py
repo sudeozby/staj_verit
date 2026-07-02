@@ -8,9 +8,7 @@ load_dotenv()
 def get_db_connection():
     """
     Veritabanına bağlanır ve bağlantı nesnesini döndürür.
-    İşlem bitince bağlantıyı kapatmayı unutmamak gerekir.
     """
-    #hata yönetimi
     try:
         conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
@@ -19,6 +17,9 @@ def get_db_connection():
             host=os.getenv("DB_HOST"),
             port=os.getenv("DB_PORT")
         )
+        # İŞTE TÜRKÇE KARAKTER HATASINI ÇÖZEN SİHİRLİ SATIR:
+        conn.set_client_encoding('UTF8')
+        
         return conn
     except Exception as e:
         print(f"Veritabanı bağlantı hatası: {e}")
