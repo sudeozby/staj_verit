@@ -1,2 +1,4 @@
 .env
 #.env dosyalarını githuba yüklememesi için bu sayede güvenlik açığı oluşturmaz
+__pycache__/
+*.pyc
