@@ -35,11 +35,28 @@ const sifre = ref('')
 const hataMesaji = ref('')
 
 const girisYap = () => {
-  // Şimdilik basit bir kontrol yapıyoruz, backend'e bağlamadan önce
+  hataMesaji.value = ''
+
+  // 1. Senaryo: Genel Yönetici
   if (kullaniciAdi.value === 'admin' && sifre.value === '1234') {
-    // Şifre doğruysa yönlendirici bizi Panele atacak
-    router.push('/panel')
-  } else {
+    localStorage.setItem('girisYapildi', 'evet')
+    localStorage.setItem('kullaniciRolu', 'yonetici') 
+    window.location.href = '/panel'
+  } 
+  // 2. Senaryo: İletişim Birimi Başkanı (Sude)
+  else if (kullaniciAdi.value === 'sude' && sifre.value === '1234') {
+    localStorage.setItem('girisYapildi', 'evet')
+    localStorage.setItem('kullaniciRolu', 'iletisim_baskani') 
+    window.location.href = '/panel'
+  } 
+  // 3. Senaryo: Standart Personel
+  else if (kullaniciAdi.value === 'personel' && sifre.value === '1234') {
+    localStorage.setItem('girisYapildi', 'evet')
+    localStorage.setItem('kullaniciRolu', 'standart') 
+    window.location.href = '/panel'
+  } 
+  // Hatalı Giriş
+  else {
     hataMesaji.value = 'Kullanıcı adı veya şifre hatalı!'
   }
 }

@@ -1,22 +1,31 @@
 <template>
   <div class="container">
-    <div class="baslik-alani">
-      <h1 class="logo-yazisi">TEM<span class="kirmizi">K</span>ON</h1>
-      <h2>CPQ (Maliyet ve Teklif) Yönetim Paneli</h2>
+    
+    <div class="ust-menu" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; border-top: 5px solid #2c3e50;">
+      <div class="logo-alani">
+        <h1 class="logo-yazisi" style="font-size: 28px; margin: 0;">TEM<span class="kirmizi">K</span>ON</h1>
+        <h2 style="font-size: 14px; margin: 0; color: #7f8c8d;">CPQ Maliyet Yönetim Paneli</h2>
+      </div>
+      
+      <div class="menu-butonlari" style="display: flex; gap: 15px;">
+        <button class="btn-menu aktif" style="background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
+        <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'iletisim_baskani'" @click="$router.push('/panolar')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button> 
+        <button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>
+      </div>
     </div>
 
-    <div class="ozet-kartlari">
+    <div class="ozet-kartlari-wrapper">
       <div class="kart maliyet-karti">
-        <h4>Toplam Maliyet</h4>
-        <p>{{ rapor ? rapor.toplam_maliyet + ' ' + rapor.para_birimi : '--' }}</p>
+        <span class="baslik">TOPLAM MALİYET</span>
+        <span class="deger">{{ genelToplamlar.maliyet_tl || 0 }} ₺</span>
       </div>
       <div class="kart proje-karti">
-        <h4>Kayıtlı Projeler</h4>
-        <p>{{ projeler.length }}</p>
+        <span class="baslik">TOPLAM PROJE</span>
+        <span class="deger">{{ genelToplamlar.proje_tl || 0 }} ₺</span>
       </div>
       <div class="kart satis-karti">
-        <h4>Kayıtlı Malzemeler</h4>
-        <p>{{ malzemeler.length }}</p>
+        <span class="baslik">TOPLAM SATIŞ</span>
+        <span class="deger">{{ genelToplamlar.satis_tl || 0 }} ₺</span>
       </div>
     </div>
 
@@ -67,134 +76,56 @@
         </div>
       </div>
 
-      <div class="form-kutusu" style="border-left-color: #8e44ad;">
-        <h3>Kayıtlı Panoyu Aç ve İncele</h3>
-        <div class="form-grubu">
-          <div class="ikili-sutun">
-            <select v-model="inceleProjeId">
-              <option disabled value="">Hangi Projedeki Pano?</option>
-              <option v-for="p in projeler" :key="p.id" :value="p.id">{{ p.proje_adi }}</option>
-            </select>
-            
-            <select v-model="incelePanoTuru">
-              <option disabled value="">Görünüm Seçin</option>
-              <option value="TÜM PANOLAR">🔥 Tüm Panoları Getir</option>
-              <option value="TÜM MCC LER">⚡ Tüm MCC Panolarını Birleştir</option>
-              <option value="TÜM REM LER">🔌 Tüm REM Panolarını Birleştir</option>
-              <optgroup label="Tekil Panolar">
-                <option v-for="pano in ['ADP 1', 'MCC 1', 'MCC 2', 'MCC 3', 'MCC 4', 'MCC 5', 'REM 100', 'REM 200', 'REM 300', 'REM 400', 'REM 500', 'KONTROL S.', 'SAHA']" :key="pano" :value="pano">{{ pano }}</option>
-              </optgroup>
-            </select>
-          </div>
-          <button @click="panoIcerigiGetir" class="btn-kaydet" style="background-color: #8e44ad;">Kayıtları Excel Gibi Aç</button>
-        </div>
-
-        <div v-if="panoIcerigi.length > 0" class="tablo-wrapper" style="margin-top: 25px;">
-          <h4 style="margin-top: 0; margin-bottom: 15px; color: #8e44ad;">{{ incelePanoTuru }} İçeriği:</h4>
-          <table class="excel-tablosu">
-            <thead>
-              <tr>
-                <th>Pano Türü</th>
-                <th>Malzeme Adı</th>
-                <th>Sipariş Kodu</th>
-                <th>Adet</th>
-                <th>Birim Fiyat</th>
-                <th>Toplam Maliyet</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in panoIcerigi" :key="index">
-                <td style="font-weight: bold; color: #8e44ad;">{{ item.pano_turu }}</td>
-                <td>{{ item.urun_adi }}</td>
-                <td>{{ item.siparis_kodu }}</td>
-                <td style="text-align: center; font-weight: bold;">{{ item.adet }}</td>
-                <td class="td-maliyet">{{ item.birim_fiyat }}</td>
-                <td class="td-maliyet">{{ item.toplam_fiyat }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div v-else-if="panoAcildi" style="margin-top: 20px; color: #c0392b; font-weight: bold;">
-          Seçilen kriterde henüz kayıtlı malzeme yok.
-        </div>
-      </div>
-
-      <div v-if="mesaj" :class="['bildirim', { hata: hataVar }]">{{ mesaj }}</div>
-    </div>
-
-
       <div class="form-kutusu pano-konfig-formu">
         <h3>Panoya Malzeme Atama</h3>
-        <div class="form-grubu">
-          <input list="projeListesi" v-model="secilenProjeIsmi" placeholder="Proje Ara..." @change="projeBul" />
-          <datalist id="projeListesi">
-            <option v-for="p in projeler" :key="p.id" :value="p.proje_adi + ' | ' + p.musteri"></option>
-          </datalist>
+        <div class="form-grubu" style="display: flex; flex-direction: column; gap: 15px;">
+          <select v-model="yeniPanoMalzeme.proje_id" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            <option disabled value="">Proje Seçin...</option>
+            <option v-for="p in projeler" :key="p.id || p[0]" :value="p.id || p[0]">
+              {{ p.proje_adi || p[1] }}
+            </option>
+          </select>
 
-          <input list="malzemeListesi" v-model="secilenMalzemeIsmi" placeholder="Malzeme Adı veya Kodu Yazın..." @change="malzemeBul" />
-          <datalist id="malzemeListesi">
-            <option v-for="m in malzemeler" :key="m.id" :value="m.urun_adi + ' | ' + m.siparis_kodu"></option>
-          </datalist>
+          <select v-model="yeniPanoMalzeme.malzeme_id" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            <option disabled value="">Malzeme Seçin...</option>
+            <option v-for="m in malzemeler" :key="m.id || m[0]" :value="m.id || m[0]">
+              {{ m.urun_adi || m[1] }}
+            </option>
+          </select>
 
           <div class="ikili-sutun">
-            <select v-model="yeniPanoMalzeme.pano_turu">
+            <select v-model="yeniPanoMalzeme.pano_turu" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+              <option disabled value="">Pano Türü Seçin</option>
               <option v-for="pano in ['ADP 1', 'MCC 1', 'MCC 2', 'MCC 3', 'MCC 4', 'MCC 5', 'REM 100', 'REM 200', 'REM 300', 'REM 400', 'REM 500', 'KONTROL S.', 'SAHA']" :key="pano" :value="pano">{{ pano }}</option>
             </select>
-            <input v-model="yeniPanoMalzeme.adet" type="number" placeholder="Adet" />
+            <input v-model="yeniPanoMalzeme.adet" type="number" placeholder="Adet" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;"/>
           </div>
+          
           <button @click="panoyaEkle" class="btn-kaydet btn-pano">Malzemeyi Panoya Ekle</button>
         </div>
       </div>
 
       <div v-if="mesaj" :class="['bildirim', { hata: hataVar }]">{{ mesaj }}</div>
     </div>
-
-    <div class="rapor-alani">
-      <div class="rapor-baslik-satiri">
-        <h3>Proje Raporu</h3>
-        <div class="rapor-aksiyon">
-        <select v-model="seciliProjeId" class="kucuk-input" style="width: 250px; text-align: left;">
-  <option disabled value="">Raporlanacak Proyeyi Seçin...</option>
-  <option v-for="p in projeler" :key="p.id" :value="p.id">
-    {{ p.proje_adi }} - {{ p.musteri }}
-  </option>
-</select>
-          <button @click="raporuGetir" class="btn-hesapla">Raporu Göster</button>
-        </div>
-      </div>
-
-      <div v-if="rapor && rapor.malzemeler" class="tablo-wrapper">
-        <table class="excel-tablosu">
-          <thead>
-            <tr>
-              <th>Pano Türü</th>
-              <th>Malzeme Adı</th>
-              <th>Sipariş Kodu</th>
-              <th>Adet</th>
-              <th>Birim Fiyat</th>
-              <th>Toplam Maliyet</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, index) in rapor.malzemeler" :key="index">
-              <td>{{ item.pano_turu }}</td>
-              <td>{{ item.urun_adi }}</td>
-              <td>{{ item.siparis_kodu }}</td>
-              <td style="text-align: center;">{{ item.adet }}</td>
-              <td class="td-maliyet">{{ item.birim_fiyat }}</td>
-              <td class="td-maliyet">{{ item.toplam_fiyat }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  </div>
 </template>
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
-// DURUM DEĞİŞKENLERİ
+const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'standart')
+const router = useRouter()
+
+// EKSİK OLAN DEĞİŞKENİ BURAYA EKLEDİK (BEYAZ EKRANIN SEBEBİ BUYDU)
+const genelToplamlar = ref({ maliyet_tl: 0, proje_tl: 0, satis_tl: 0 });
+
+const cikisYap = () => {
+  localStorage.removeItem('girisYapildi')
+  router.push('/') 
+}
+
 const mesaj = ref('')
 const hataVar = ref(false)
 const seciliProjeId = ref(1)
@@ -204,60 +135,15 @@ const secilenMalzemeIsmi = ref('')
 const projeler = ref([])
 const malzemeler = ref([])
 
-// MODELLER
 const yeniProje = ref({ proje_adi: '', musteri: '', son_kullanici: '', lokasyon: '', teklif_konusu: '', teklif_tarihi: '', teklif_referans_no: '', hazirlayan: '' })
 const yeniMalzeme = ref({ siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', tedarikci: '', liste_fiyati: null, para_birimi: 'USD', grup_iskonto_id: 1 })
 const yeniPanoMalzeme = ref({ proje_id: '', malzeme_id: '', pano_turu: 'ADP 1', adet: 1 })
 
-
-// PANO İNCELEME İÇİN DEĞİŞKENLER
-const inceleProjeId = ref('');
-const incelePanoTuru = ref('');
-const panoIcerigi = ref([]);
-const panoAcildi = ref(false);
-
-// SADECE SEÇİLİ VEYA GRUPLANMIŞ PANO LİSTESİNİ ÇEKEN FONKSİYON
-const panoIcerigiGetir = async () => {
-  if (!inceleProjeId.value || !incelePanoTuru.value) {
-    return bildirimGoster("Lütfen proje ve görünüm seçin!", true);
-  }
-  try {
-    const response = await axios.get(`http://127.0.0.1:8000/projeler/${inceleProjeId.value}/maliyet-raporu`);
-    const tumMalzemeler = response.data.malzemeler || [];
-    
-    // Seçime Göre Excel'i Filtrele
-    if (incelePanoTuru.value === "TÜM PANOLAR") {
-      panoIcerigi.value = tumMalzemeler;
-    } else if (incelePanoTuru.value === "TÜM MCC LER") {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano_turu.includes('MCC'));
-    } else if (incelePanoTuru.value === "TÜM REM LER") {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano_turu.includes('REM'));
-    } else {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano_turu === incelePanoTuru.value);
-    }
-    
-    panoAcildi.value = true;
-  } catch (error) {
-    bildirimGoster("Kayıtlar getirilemedi!", true);
-  }
-}
-// YARDIMCI FONKSİYONLAR
 const bildirimGoster = (metin, hata = false) => {
   mesaj.value = metin; hataVar.value = hata;
   setTimeout(() => { mesaj.value = '' }, 4000);
 }
 
-const projeBul = () => {
-  const p = projeler.value.find(x => (x.proje_adi + ' | ' + x.musteri) === secilenProjeIsmi.value)
-  if (p) yeniPanoMalzeme.value.proje_id = p.id
-}
-
-const malzemeBul = () => {
-  const m = malzemeler.value.find(x => (x.urun_adi + ' | ' + x.siparis_kodu) === secilenMalzemeIsmi.value)
-  if (m) yeniPanoMalzeme.value.malzeme_id = m.id
-}
-
-// API ÇAĞRILARI
 const verileriYukle = async () => {
   try {
     const [p, m] = await Promise.all([
@@ -281,7 +167,7 @@ const projeOlustur = async () => {
 
 const malzemeEkle = async () => {
   if (!yeniMalzeme.value.siparis_kodu || !yeniMalzeme.value.urun_adi || !yeniMalzeme.value.liste_fiyati) {
-    return bildirimGoster("Zorunlu alanları (Kod, Ad, Fiyat) doldurun!", true);
+    return bildirimGoster("Zorunlu alanları doldurun!", true);
   }
   try {
     await axios.post('http://127.0.0.1:8000/malzemeler', yeniMalzeme.value)
@@ -298,15 +184,7 @@ const panoyaEkle = async () => {
   try {
     await axios.post('http://127.0.0.1:8000/projeler/pano-malzeme-ekle', yeniPanoMalzeme.value);
     bildirimGoster(`Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`);
-    await raporuGetir();
   } catch (error) { bildirimGoster("Ekleme başarısız!", true) }
-}
-
-const raporuGetir = async () => {
-  try {
-    const response = await axios.get(`http://127.0.0.1:8000/projeler/${seciliProjeId.value}/maliyet-raporu`)
-    rapor.value = response.data
-  } catch (error) { bildirimGoster("Bu projede malzeme yok veya bağlantı hatası!", true) }
 }
 
 onMounted(verileriYukle)
@@ -367,4 +245,61 @@ input:focus, select:focus { border-color: #3498db; outline: none; }
 .excel-tablosu td { border: 1px solid #dee2e6; padding: 10px; color: #34495e; }
 .td-maliyet { background-color: #fff5f5; color: #c0392b; text-align: right; font-weight: 500; }
 .excel-tablosu tbody tr:hover { background-color: #f1f4f8; }
+/* --- ÖZET KARTLARI DÜZENİ VE BOŞLUKLARI --- */
+.ozet-kartlari-wrapper {
+  display: flex;
+  justify-content: flex-end; /* Kartları sağ köşeye yaslar (Sola almak istersen 'flex-start' yap) */
+  
+  /* İŞTE BOŞLUK AYARLARI BURADA: */
+  gap: 20px;           /* KARTLARIN BİRBİRİ ARASINDAKİ BOŞLUK */
+  margin-top: 25px;    /* Üstteki diğer elementlerle arasındaki boşluk */
+  margin-bottom: 30px; /* Alttaki diğer elementlerle arasındaki boşluk */
+  
+  flex-wrap: wrap;     /* Ekran küçülünce (mobilde) kartların taşmayıp alt alta inmesini sağlar */
+}
+
+.kart {
+  /* KARTIN KENDİ İÇ BOŞLUĞU (Yukarı/Aşağı 15px, Sağ/Sol 20px) */
+  padding: 15px 20px; 
+  
+  border-radius: 8px;
+  color: white;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.2s; /* Mouse ile üzerine gelince hafifçe büyüme animasyonu */
+}
+
+.kart:hover {
+  transform: translateY(-4px);
+}
+
+.kart .baslik { 
+  font-size: 11px; 
+  opacity: 0.9; 
+  letter-spacing: 1px; 
+}
+
+.kart .deger { 
+  font-size: 19px; 
+  font-weight: bold; 
+  margin-top: 8px; /* Başlık ile rakam arasındaki boşluk */
+}
+
+/* KART RENKLERİ */
+.maliyet-karti { background-color: #e74c3c; } /* Kırmızı */
+.proje-karti { background-color: #f39c12; }   /* Turuncu */
+.satis-karti { background-color: #27ae60; }   /* Yeşil */
+
+/* MOBİL (TELEFON) EKRANI İÇİN BOŞLUK AYARI */
+@media (max-width: 768px) {
+  .ozet-kartlari-wrapper {
+    justify-content: center; /* Mobilde kartları ortala */
+  }
+  .kart {
+    width: 100%; /* Mobilde kartlar ekranı tam kaplasın */
+  }
+}
 </style>

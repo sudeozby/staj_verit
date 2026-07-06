@@ -91,30 +91,32 @@ def projeye_pano_malzemesi_ekle(veri: ProjePanoEkle):
 # --- 3'LÜ FİYAT HESAPLAMA MOTORU (Maliyet / Proje / Satış) ---
 @router.get("/projeler/{proje_id}/maliyet-raporu")
 def proje_maliyet_raporu_getir(proje_id: int):
+    # Kapı açılıyor
     with get_db_session() as cur:
-        # HATA DÜZELTİLDİ: m.para_birimi_id yerine m.para_birimi kullanıyoruz
-      # Sadece sorgu kısmını şu şekilde güncelleyelim:
-     cur.execute("""
-         SELECT 
-             p.proje_adi,
-             pl.pano_turu,
-             m.urun_adi,
-             pl.adet,
-             m.liste_fiyati,
-             COALESCE(k.kur_degeri, 1.0) as kur_degeri, -- Kur yoksa 1.0 al, hata verme
-             m.para_birimi,
-             g.maliyet_iskonto,
-             g.proje_iskonto,
-             g.satis_iskonto
-         FROM proje_pano_listesi pl
-         JOIN projeler p ON pl.proje_id = p.id
-         JOIN malzemeler m ON pl.malzeme_id = m.id
-         LEFT JOIN kurlar k ON m.para_birimi = k.para_birimi -- LEFT JOIN yaptık
-         LEFT JOIN grup_iskontolar g ON m.grup_iskonto_id = g.id
-         WHERE p.id = %s
-     """, (proje_id,))
+        cur.execute("""
+            SELECT 
+                p.proje_adi,
+                pl.pano_turu,
+                m.urun_adi,
+                pl.adet,
+                m.liste_fiyati,
+                COALESCE(k.kur_degeri, 1.0) as kur_degeri,
+                m.para_birimi,
+                g.maliyet_iskonto,
+                g.proje_iskonto,
+                g.satis_iskonto
+            FROM proje_pano_listesi pl
+            JOIN projeler p ON pl.proje_id = p.id
+            JOIN malzemeler m ON pl.malzeme_id = m.id
+            LEFT JOIN kurlar k ON m.para_birimi = k.para_birimi
+            LEFT JOIN grup_iskontolar g ON m.grup_iskonto_id = g.id
+            WHERE p.id = %s
+        """, (proje_id,))
         
-    # GÜVENLİK ÖNLEMİ: Eğer projede hiç malzeme yoksa Vue.js çökmesin diye sıfır dönüyoruz
+        # Kapı kapanmadan veriyi alıyoruz
+        satirlar = cur.fetchall()
+
+    # GÜVENLİK ÖNLEMİ 1: Proje boşsa çökmesin
     if not satirlar:
         return {
             "proje_adi": "Yeni Proje (Boş)",
@@ -135,13 +137,17 @@ def proje_maliyet_raporu_getir(proje_id: int):
     for satir in satirlar:
         proje_adi, pano_turu, urun_adi, adet, liste_fiyati, kur_degeri, para_birimi, m_isk, p_isk, s_isk = satir
         
-        # 1. Ham Fiyatı TL'ye Çevir
-        tl_liste_fiyati = float(liste_fiyati) * float(kur_degeri)
+        # GÜVENLİK ÖNLEMİ 2: Matematik Çökmesini Engelleme (Boş gelen veriyi 0 kabul ediyoruz)
+        guvenli_liste_fiyati = float(liste_fiyati or 0.0)
+        guvenli_kur_degeri = float(kur_degeri or 1.0)
+        guvenli_adet = float(adet or 0.0)
         
-        # None gelme ihtimaline karşı güvenlik (iskonto yoksa 0.0 al)
         mal_isk_oran = float(m_isk or 0.0)
         proj_isk_oran = float(p_isk or 0.0)
         sat_isk_oran = float(s_isk or 0.0)
+        
+        # 1. Ham Fiyatı TL'ye Çevir
+        tl_liste_fiyati = guvenli_liste_fiyati * guvenli_kur_degeri
         
         # 2. ÜÇ FARKLI BİRİM FİYAT (İskontoları düşerek)
         birim_maliyet = tl_liste_fiyati * (1 - mal_isk_oran)
@@ -149,9 +155,9 @@ def proje_maliyet_raporu_getir(proje_id: int):
         birim_satis = tl_liste_fiyati * (1 - sat_isk_oran)
         
         # 3. ÜÇ FARKLI TOPLAM TUTAR (Adet ile çarparak)
-        tutar_maliyet = birim_maliyet * adet
-        tutar_proje = birim_proje * adet
-        tutar_satis = birim_satis * adet
+        tutar_maliyet = birim_maliyet * guvenli_adet
+        tutar_proje = birim_proje * guvenli_adet
+        tutar_satis = birim_satis * guvenli_adet
         
         # 4. Proje Genel Toplamlarına Ekle
         toplam_maliyet_tl += tutar_maliyet
@@ -161,14 +167,19 @@ def proje_maliyet_raporu_getir(proje_id: int):
         rapor.append({
             "pano": pano_turu,
             "malzeme": urun_adi,
-            "adet": adet,
-            # Arayüze (Vue.js'e) üç farklı fiyatı da yolluyoruz
+            "adet": guvenli_adet,
+            
+            # GÖRSELDEKİ YENİ ALANLAR İÇİN EKLENENLER:
+            "liste_fiyati": guvenli_liste_fiyati,
+            
+            "iskonto_orani": proj_isk_oran,  # Proje iskontosunu çekiyoruz
+            "kur_degeri": guvenli_kur_degeri,
+            "para_birimi": para_birimi,
+            
             "birim_maliyet_tl": round(birim_maliyet, 2),
             "toplam_maliyet_tl": round(tutar_maliyet, 2),
-            
             "birim_proje_tl": round(birim_proje, 2),
             "toplam_proje_tl": round(tutar_proje, 2),
-            
             "birim_satis_tl": round(birim_satis, 2),
             "toplam_satis_tl": round(tutar_satis, 2)
         })
@@ -182,7 +193,6 @@ def proje_maliyet_raporu_getir(proje_id: int):
         },
         "detaylar": rapor
     }
-
 # --- MALZEME VE PROJE LİSTELEME (Dinamik seçim için) ---
 @router.get("/malzemeler/listele")
 def malzemeleri_listele():
