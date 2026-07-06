@@ -12,25 +12,32 @@ const router = createRouter({
   ]
 })
 
-// MODERN GÜVENLİK KİLİDİ (Hanging/Kilitlenme Yapmayan Versiyon)
+// YENİ 3 KATMANLI GÜVENLİK KİLİDİ (Yönetici, Teklif, Saha)
 router.beforeEach((to) => {
-  const isLogged = localStorage.getItem('girisYapildi') === 'evet'
+  // Login dosyamızdaki 'true' kaydıyla eşleştirdik
+  const isLogged = localStorage.getItem('girisYapildi') === 'true'
   const rol = localStorage.getItem('kullaniciRolu')
 
-  // Kural 1: Giriş yapılmamışsa kapı dışarı
+  // KURAL 1: Giriş yapılmamışsa nereye tıklarsa tıklasın Login'e (/) gönder
   if (!isLogged && to.path !== '/') {
     return '/' 
   }
 
-  // Kural 2: Giriş yapılmışsa ve tekrar Login'e dönülmeye çalışılıyorsa panele at
+  // KURAL 2: Giriş yapılmışken tekrar Login sayfasına dönülmeye çalışılıyorsa
   if (isLogged && to.path === '/') {
+    // Saha ekibi ise onu doğrudan sadece kendi paneline (Panolar) at
+    if (rol === 'saha_ekibi') {
+      return '/panolar'
+    }
+    // Yönetici veya Teklif Ekibi ise onları Ana Panel'e at
     return '/panel' 
   }
 
-  // Kural 3: ROL BAZLI GÜVENLİK - Standart personel Panolar'a girmeye çalışırsa Ana Panel'e geri fırlat
-  if (to.path === '/panolar' && rol === 'standart') {
-    alert('Bu sayfayı görüntüleme yetkiniz bulunmamaktadır!')
-    return '/panel'
+  // KURAL 3: SAHA EKİBİ KORUMA DUVARI
+  // Saha/İmalat ekibi url'ye elle /panel yazıp girmeye çalışırsa engelle
+  if (to.path === '/panel' && rol === 'saha_ekibi') {
+    alert('Erişim Reddedildi: Saha/İmalat ekibinin Ana Panel (Maliyet) ekranına erişim yetkisi yoktur!')
+    return '/panolar'
   }
 
   return true

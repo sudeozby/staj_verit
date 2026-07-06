@@ -1,84 +1,105 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
+  <div class="login-wrapper">
+    <div class="login-kart">
+      
       <div class="logo-alani">
         <h1 class="logo-yazisi">TEM<span class="kirmizi">K</span>ON</h1>
-        <p class="alt-baslik">Sistem Girişi</p>
+        <h2>CPQ Merkezi Giriş Platformu</h2>
       </div>
 
-      <div class="form-grubu">
-        <div class="input-kutusu">
-          <label>Kullanıcı Adı</label>
-          <input v-model="kullaniciAdi" type="text" placeholder="Kullanıcı adınızı girin" />
-        </div>
+      <div class="login-form">
         
-        <div class="input-kutusu">
+        <div class="form-grubu">
+          <label>Kullanıcı Adı / E-Posta</label>
+          <input 
+            v-model="kullaniciAdi" 
+            type="text" 
+            placeholder="Adınızı giriniz..." 
+            @keyup.enter="girisKontrol"
+          />
+        </div>
+
+        <div class="form-grubu">
           <label>Şifre</label>
-          <input v-model="sifre" type="password" placeholder="Şifrenizi girin" />
+          <input 
+            v-model="sifre" 
+            type="password" 
+            placeholder="••••••••" 
+            @keyup.enter="girisKontrol"
+          />
         </div>
 
-        <button @click="girisYap" class="btn-giris">Giriş Yap</button>
-        
-        <div v-if="hataMesaji" class="hata-mesaji">{{ hataMesaji }}</div>
+        <div class="form-grubu">
+          <label>Sistem Yetki Katmanı (Rol)</label>
+          <select v-model="seciliRol" class="rol-seçici">
+            <option value="yonetici">👑 Yönetici (Tam Erişim / Maliyet Analizi)</option>
+            <option value="teklif_ekibi">💼 Teklif Ekibi (Veri Girişi / P1 PDF Çıktısı)</option>
+            <option value="saha_ekibi">🔧 Saha & İmalat Ekibi (Sadece Fiyatsız Teknik Liste)</option>
+          </select>
+        </div>
+
+        <button type="button" @click="girisKontrol" class="btn-giris">
+          Sisteme Güvenli Giriş Yap
+        </button>
       </div>
+
+      <div v-if="hataMesaji" class="hata-kutusu">
+        {{ hataMesaji }}
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue';
 
-const router = useRouter()
-const kullaniciAdi = ref('')
-const sifre = ref('')
-const hataMesaji = ref('')
+const kullaniciAdi = ref('');
+const sifre = ref('');
+const seciliRol = ref('saha_ekibi'); 
+const hataMesaji = ref('');
 
-const girisYap = () => {
-  hataMesaji.value = ''
-
-  // 1. Senaryo: Genel Yönetici
-  if (kullaniciAdi.value === 'admin' && sifre.value === '1234') {
-    localStorage.setItem('girisYapildi', 'evet')
-    localStorage.setItem('kullaniciRolu', 'yonetici') 
-    window.location.href = '/panel'
-  } 
-  // 2. Senaryo: İletişim Birimi Başkanı (Sude)
-  else if (kullaniciAdi.value === 'sude' && sifre.value === '1234') {
-    localStorage.setItem('girisYapildi', 'evet')
-    localStorage.setItem('kullaniciRolu', 'iletisim_baskani') 
-    window.location.href = '/panel'
-  } 
-  // 3. Senaryo: Standart Personel
-  else if (kullaniciAdi.value === 'personel' && sifre.value === '1234') {
-    localStorage.setItem('girisYapildi', 'evet')
-    localStorage.setItem('kullaniciRolu', 'standart') 
-    window.location.href = '/panel'
-  } 
-  // Hatalı Giriş
-  else {
-    hataMesaji.value = 'Kullanıcı adı veya şifre hatalı!'
+const girisKontrol = () => {
+  // Boşluk Kontrolü
+  if (!kullaniciAdi.value.trim() || !sifre.value.trim()) {
+    hataMesaji.value = "Lütfen kullanıcı adı ve şifre alanlarını doldurun!";
+    return;
   }
-}
+
+  // Yetki ve Kimlik Kaydı
+  localStorage.setItem('girisYapildi', 'true');
+  localStorage.setItem('kullaniciRolu', seciliRol.value);
+  hataMesaji.value = '';
+
+  // Kesin Yönlendirme
+  if (seciliRol.value === 'saha_ekibi') {
+    window.location.href = '/panolar'; 
+  } else {
+    window.location.href = '/panel'; 
+  }
+};
 </script>
 
 <style scoped>
-.login-container {
+.login-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #2c3e50; /* Kurumsal Lacivert Arka Plan */
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
 }
 
-.login-box {
-  background: white;
+.login-kart {
+  background: #ffffff;
   padding: 40px;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   width: 100%;
-  max-width: 400px;
-  border-top: 6px solid #c0392b; /* Kırmızı Vurgu */
+  max-width: 420px;
+  border-top: 6px solid #2c3e50;
+  box-sizing: border-box;
 }
 
 .logo-alani {
@@ -87,73 +108,85 @@ const girisYap = () => {
 }
 
 .logo-yazisi {
-  font-size: 42px;
+  font-size: 36px;
   font-weight: 900;
   margin: 0;
-  color: #2c3e50;
   letter-spacing: 2px;
+  color: #2c3e50;
 }
 
 .kirmizi {
   color: #c0392b;
 }
 
-.alt-baslik {
+.logo-alani h2 {
+  font-size: 14px;
   color: #7f8c8d;
   margin-top: 5px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
-.form-grubu {
+.login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.input-kutusu label {
-  display: block;
-  font-weight: bold;
-  color: #34495e;
-  margin-bottom: 8px;
-  font-size: 14px;
+.form-grubu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-input {
-  width: 100%;
+.form-grubu label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #34495e;
+}
+
+input, select {
   padding: 12px;
   border: 1px solid #bdc3c7;
   border-radius: 6px;
+  font-size: 14px;
+  color: #2c3e50;
+  width: 100%;
   box-sizing: border-box;
-  font-size: 15px;
   transition: border-color 0.2s;
 }
 
-input:focus {
+input:focus, select:focus {
   border-color: #3498db;
   outline: none;
 }
 
 .btn-giris {
-  background-color: #c0392b;
+  background-color: #2c3e50;
   color: white;
   padding: 14px;
   border: none;
   border-radius: 6px;
-  font-size: 16px;
   font-weight: bold;
+  font-size: 15px;
   cursor: pointer;
   transition: background-color 0.2s;
   margin-top: 10px;
+  width: 100%;
 }
 
 .btn-giris:hover {
-  background-color: #a53125;
+  background-color: #1a252f;
 }
 
-.hata-mesaji {
+.hata-kutusu {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #fdf2f2;
   color: #c0392b;
+  border: 1px solid #fadbd8;
+  border-radius: 6px;
   text-align: center;
-  font-weight: bold;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>

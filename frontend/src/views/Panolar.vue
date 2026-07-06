@@ -7,14 +7,14 @@
       </div>
       
       <div class="menu-butonlari" style="display: flex; gap: 15px;">
-        <button @click="router.push('/panel')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
+        <button v-if="kullaniciRolu !== 'saha_ekibi'" @click="router.push('/panel')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
         <button class="btn-menu aktif" style="background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button> 
         <button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>
       </div>
     </div>
 
     <div class="form-kutusu" style="background: white; padding: 30px; border-radius: 10px; border-left: 8px solid #8e44ad; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
-      <h3>Kayıtlı Panoları Excel Gibi İncele</h3>
+      <h3>Kayıtlı Panoları İnceleme Ekranı</h3>
       <div class="form-grubu" style="display: flex; flex-direction: column; gap: 15px;">
         <div class="ikili-sutun" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
           <select v-model="inceleProjeId">
@@ -32,74 +32,82 @@
             </optgroup>
           </select>
         </div>
-        <button @click="panoIcerigiGetir" class="btn-kaydet" style="background-color: #8e44ad; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Kayıtları Excel Gibi Aç</button>
+        <button @click="panoIcerigiGetir" class="btn-kaydet" style="background-color: #8e44ad; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Kayıtları Filtrele ve Aç</button>
       </div>
 
       <div v-if="panoIcerigi.length > 0" class="tablo-wrapper" style="margin-top: 25px; overflow-x: auto;">
         <h4 style="margin-top: 0; margin-bottom: 15px; color: #8e44ad;">{{ incelePanoTuru }} İçeriği:</h4>
-        <div style="display: flex; gap: 10px;">
-  <button @click="excelIndir" style="background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-    📊 Excel Olarak İndir
-  </button>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <button v-if="kullaniciRolu === 'yonetici'" @click="excelIndir" style="background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+            📊 Excel Olarak İndir
+          </button>
 
-  <button @click="pdfIndir" style="background-color: #e74c3c; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-    📄 Müşteri Teklifi (PDF) İndir
-  </button>
-</div>
+          <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi'" @click="pdfIndir" style="background-color: #e74c3c; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+            📄 Müşteri Teklifi (PDF) İndir
+          </button>
+        </div>
 
-        <table class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
+        <table v-if="kullaniciRolu === 'yonetici'" class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
           <thead>
             <tr>
               <th colspan="9" style="background-color: #ffc000; color: #000; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">
-                PROJEYE SATIŞ ŞARTLARI GEÇERLİ
+                PROJEYE SATIŞ ŞARTLARI GEÇERLİ (YÖNETİCİ EKRANI)
               </th>
             </tr>
             <tr style="background-color: #9bc2e6; color: #005a8c;">
               <th style="border: 1px solid #000; padding: 10px;">PANO TÜRÜ</th>
               <th style="border: 1px solid #000; padding: 10px;">MALZEME ADI</th>
-              <th style="border: 1px solid #000; padding: 10px;">LİSTE FİYATI</th> <th style="border: 1px solid #000; padding: 10px;">İSKONTO</th>
-              <th style="border: 1px solid #000; padding: 10px;">f(x) NET FİYAT</th>
+              <th style="border: 1px solid #000; padding: 10px;">LİSTE FİYATI</th> 
+              <th style="border: 1px solid #000; padding: 10px;">İSKONTO</th>
+              <th style="border: 1px solid #000; padding: 10px;">NET FİYAT</th>
               <th style="border: 1px solid #000; padding: 10px;">ADET/SET</th>
-              <th style="border: 1px solid #000; padding: 10px;">f(x) TOPLAM</th>
+              <th style="border: 1px solid #000; padding: 10px;">TOPLAM</th>
               <th style="border: 1px solid #000; padding: 10px;">KUR</th>
               <th style="border: 1px solid #000; padding: 10px;">NOTLAR</th>
             </tr>
           </thead>
-          
           <tbody>
             <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="text-align: center; border-bottom: 1px solid #ccc;">
               <td style="border: 1px solid #000; padding: 8px;">{{ item.pano }}</td>
-              
               <td style="border: 1px solid #000; padding: 8px; text-align: left;">{{ item.malzeme }}</td>
-              
-              <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">
-                {{ item.liste_fiyati }} {{ item.para_birimi }}
-              </td>
-              
-              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699; font-weight: bold;">
-                % {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}
-              </td>
-              
-              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">
-                {{ item.birim_proje_tl }} ₺
-              </td>
-              
-              <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">
-                {{ item.adet }}
-              </td>
-              
-              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">
-                {{ item.toplam_proje_tl }} ₺
-              </td>
-              
-              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699;">
-                {{ item.kur_degeri }} ({{ item.para_birimi }})
-              </td>
-              
+              <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.liste_fiyati }} {{ item.para_birimi }}</td>
+              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699; font-weight: bold;">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</td>
+              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">{{ item.birim_proje_tl }} ₺</td>
+              <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">{{ item.adet }}</td>
+              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">{{ item.toplam_proje_tl }} ₺</td>
+              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699;">{{ item.kur_degeri }} ({{ item.para_birimi }})</td>
               <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699;">-</td>
             </tr>
           </tbody>
         </table>
+
+        <table v-else class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
+          <thead>
+            <tr>
+              <th colspan="5" style="background-color: #34495e; color: white; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">
+                TEKNİK KONFİGÜRASYON VE MALZEME LİSTESİ (İMALAT / TEKLİF)
+              </th>
+            </tr>
+            <tr style="background-color: #ecf0f1; color: #2c3e50;">
+              <th style="border: 1px solid #000; padding: 10px; width: 10%;">SIRA</th>
+              <th style="border: 1px solid #000; padding: 10px; width: 20%;">PANO TÜRÜ</th>
+              <th style="border: 1px solid #000; padding: 10px; width: 25%;">SİPARİŞ KODU</th>
+              <th style="border: 1px solid #000; padding: 10px; width: 35%;">MALZEME ADI</th>
+              <th style="border: 1px solid #000; padding: 10px; width: 10%;">ADET</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="text-align: center; border-bottom: 1px solid #ccc;">
+              <td style="border: 1px solid #000; padding: 8px;">{{ index + 1 }}</td>
+              <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.pano }}</td>
+              <td style="border: 1px solid #000; padding: 8px; font-family: monospace;">{{ item.siparis_kodu || 'M-CODE-' + index }}</td>
+              <td style="border: 1px solid #000; padding: 8px; text-align: left;">{{ item.malzeme }}</td>
+              <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">{{ item.adet }}</td>
+            </tr>
+          </tbody>
+        </table>
+
       </div>
 
       <div v-else-if="panoAcildi" style="margin-top: 20px; color: #c0392b; font-weight: bold; text-align: center;">
@@ -107,198 +115,118 @@
       </div>
     </div>
 
-
     <div style="display: none;">
-  <div id="p1-teklif-sablonu" class="pdf-container">
-    
-    <div class="pdf-sayfa kapak-sayfasi">
-      <div class="kapak-icerik">
-        <h1 class="pdf-logo">TEM<span class="kirmizi">K</span>ON</h1>
-        <div class="cizgi"></div>
-        <h2>RESMİ PROJE TEKLİFİ</h2>
-        <p class="alt-baslik">Maliyet ve Teknik Konfigürasyon Belgesi (P1)</p>
-        <div class="kapak-alt-bilgi">
-          <p><strong>Tarih:</strong> {{ yeniProje.teklif_tarihi || '06.07.2026' }}</p>
-          <p><strong>Referans No:</strong> {{ yeniProje.teklif_referans_no || 'REF-2026-001' }}</p>
+      <div id="p1-teklif-sablonu" class="pdf-container">
+        <div class="pdf-sayfa kapak-sayfasi">
+          <div class="kapak-icerik">
+            <h1 class="pdf-logo">TEM<span class="kirmizi">K</span>ON</h1>
+            <div class="cizgi"></div>
+            <h2>RESMİ PROJE TEKLİFİ</h2>
+            <p class="alt-baslik">Maliyet ve Teknik Konfigürasyon Belgesi (P1)</p>
+            <div class="kapak-alt-bilgi">
+              <p><strong>Tarih:</strong> {{ yeniProje.teklif_tarihi }}</p>
+              <p><strong>Referans No:</strong> {{ yeniProje.teklif_referans_no }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="sayfa-sonu"></div>
+
+        <div class="pdf-sayfa">
+          <div class="pdf-baslik-alani">
+            <h3>1. GENEL BAKIŞ & PROJE DETAYLARI</h3>
+          </div>
+          <div class="pdf-metin-kutusu">
+            <h4>Hakkımızda</h4>
+            <p>TEMKON, endüstriyel otomasyon ve AG/OG pano sistemlerinde esnek, modüler ve yüksek mühendislik standartlarına uygun çözümler üretmektedir.</p>
+          </div>
+          <div class="pdf-metin-kutusu" style="margin-top: 20px;">
+            <h4>Proje Kimlik Kartı</h4>
+            <table class="pdf-ozet-tablo">
+              <tr><td><strong>Müşteri:</strong></td><td>{{ yeniProje.musteri }}</td></tr>
+              <tr><td><strong>Proje Adı:</strong></td><td>{{ yeniProje.proje_adi }}</td></tr>
+              <tr><td><strong>Hazırlayan:</strong></td><td>{{ yeniProje.hazirlayan }}</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="sayfa-sonu"></div>
+
+        <div class="pdf-sayfa">
+          <div class="pdf-baslik-alani">
+            <h3>2. TİCARİ VE TEKNİK ŞARTNAME</h3>
+          </div>
+          <div class="sartlar-listesi">
+            <p><strong>1. Geçerlilik Süresi:</strong> İşbu teklif veriliş tarihinden itibaren 30 takvim günü geçerlidir.</p>
+            <p><strong>2. Garanti Şartları:</strong> Tüm pano sistemlerimiz teslim tarihinden itibaren 2 yıl garantilidir.</p>
+          </div>
+          <div class="imza-alani" style="margin-top: 80px; display: flex; justify-content: space-between;">
+            <div class="imza-kutu"><strong>Müşteri Onayı</strong><br><br><br>İmza / Kaşe</div>
+            <div class="imza-kutu"><strong>TEMKON Yetkilisi</strong><br><br><br>İmza / Kaşe</div>
+          </div>
+        </div>
+        <div class="sayfa-sonu"></div>
+
+        <div class="pdf-sayfa">
+          <div class="pdf-baslik-alani">
+            <h3>3. TEKNİK MALZEME SPESİFİKASYONU (FİYATSIZ LİSTE)</h3>
+          </div>
+          <table class="pdf-malzeme-tablosu">
+            <thead>
+              <tr>
+                <th style="width: 10%">Sıra</th>
+                <th style="width: 25%">Pano Türü</th>
+                <th style="width: 55%">Malzeme Adı</th>
+                <th style="width: 10%">Adet</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index">
+                <td style="text-align: center;">{{ index + 1 }}</td>
+                <td>{{ item.pano }}</td>
+                <td>{{ item.malzeme }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ item.adet }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-    <div class="sayfa-sonu"></div>
-
-    <div class="pdf-sayfa">
-      <div class="pdf-baslik-alani">
-        <h3>1. GENEL BAKIŞ & PROJE DETAYLARI</h3>
-      </div>
-      <div class="pdf-metin-kutusu">
-        <h4>Hakkımızda</h4>
-        <p>TEMKON, endüstriyel otomasyon ve AG/OG pano sistemlerinde esnek, modüler ve yüksek mühendislik standartlarına uygun çözümler üretmektedir. CPQ alt yapımız sayesinde projelerinizin maliyet analizi milimi milimine hesaplanmaktadır.</p>
-      </div>
-      <div class="pdf-metin-kutusu" style="margin-top: 20px;">
-        <h4>Proje Kimlik Kartı</h4>
-        <table class="pdf-ozet-tablo">
-          <tr><td><strong>Müşteri / Son Kullanıcı:</strong></td><td>{{ yeniProje.musteri || '--' }} / {{ yeniProje.son_kullanici || '--' }}</td></tr>
-          <tr><td><strong>Lokasyon:</strong></td><td>{{ yeniProje.lokasyon || '--' }}</td></tr>
-          <tr><td><strong>Proje Adı:</strong></td><td>{{ yeniProje.proje_adi || '--' }}</td></tr>
-          <tr><td><strong>Teklif Konusu:</strong></td><td>{{ yeniProje.teklif_konusu || '--' }}</td></tr>
-          <tr><td><strong>Hazırlayan:</strong></td><td>{{ yeniProje.hazirlayan || 'Sude Özbay' }}</td></tr>
-        </table>
-      </div>
-    </div>
-    <div class="sayfa-sonu"></div>
-
-    <div class="pdf-sayfa">
-      <div class="pdf-baslik-alani">
-        <h3>2. TİCARİ VE TEKNİK ŞARTNAME</h3>
-      </div>
-      <div class="sartlar-listesi">
-        <p><strong>1. Geçerlilik Süresi:</strong> İşbu teklif veriliş tarihinden itibaren 30 (otuz) takvim günü geçerlidir.</p>
-        <p><strong>2. Teslim Süresi:</strong> Onaylanan projenin ardından malzemelerin tedarik durumuna bağlı olarak 4-6 hafta içerisindedir.</p>
-        <p><strong>3. Garanti Şartları:</strong> Tüm pano sistemlerimiz fabrikasyon ve montaj hatalarına karşı teslim tarihinden itibaren 2 (iki) yıl garantilidir.</p>
-        <p><strong>4. Ödeme Şartları:</strong> %50 Sipariş formu ile birlikte nakit, %50 teslimat öncesi banka havalesi veya 60 günlük çek olarak tahsil edilecektir.</p>
-      </div>
-      <div class="imza-alani" style="margin-top: 80px; display: flex; justify-content: space-between;">
-        <div class="imza-kutu"><strong>Müşteri Onayı</strong><br><br><br>İmza / Kaşe</div>
-        <div class="imza-kutu"><strong>TEMKON Yetkilisi</strong><br><br><br>İmza / Kaşe</div>
-      </div>
-    </div>
-    <div class="sayfa-sonu"></div>
-
-    <div class="pdf-sayfa">
-      <div class="pdf-baslik-alani">
-        <h3>3. TEKNİK MALZEME SPESİFİKASYONU (FİYATSIZ LİSTE)</h3>
-      </div>
-      <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">* Ticari gizlilik anlaşmaları gereği bu sayfada fiyat sütunları maskelenmiştir. Sadece teknik adet ve marka doğrulaması içerir.</p>
-      
-      <table class="pdf-malzeme-tablosu">
-        <thead>
-          <tr>
-            <th style="width: 8%">Sıra</th>
-            <th style="width: 20%">Pano Türü</th>
-            <th style="width: 25%">Sipariş Kodu</th>
-            <th style="width: 35%">Malzeme Adı</th>
-            <th style="width: 12%">Adet</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, index) in panoIcerigi" :key="index">
-            <td style="text-align: center;">{{ index + 1 }}</td>
-            <td>{{ item.pano || item.pano_turu }}</td>
-            <td style="font-family: monospace;">{{ item.siparis_kodu }}</td>
-            <td>{{ item.urun_adi }}</td>
-            <td style="text-align: center; font-weight: bold;">{{ item.adet }}</td>
-          </tr>
-          <tr v-if="!filtrelenmisPanoIcerigi || filtrelenmisPanoIcerigi.length === 0">
-            <td colspan="5" style="text-align: center; color: #95a5a6;">Tabloda malzeme bulunmadığı için liste boş üretildi.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
   </div>
-</div>
-  </div>
-
 </template>
 
 <script setup>
 import html2pdf from 'html2pdf.js';
 import * as XLSX from 'xlsx';
-import { ref, onMounted, computed } from 'vue';import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
 
-const router = useRouter()
-const projeler = ref([])
-const inceleProjeId = ref('')
-const incelePanoTuru = ref('')
-const panoIcerigi = ref([])
-const panoAcildi = ref(false)
+const router = useRouter();
 
-// PDF ŞABLONU İÇİN GEREKLİ DEĞİŞKEN
+// ROL KONTROLÜ (yonetici, teklif_ekibi, saha_ekibi)
+const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'saha_ekibi');
+
+const projeler = ref([]);
+const inceleProjeId = ref('');
+const incelePanoTuru = ref('');
+const panoIcerigi = ref([]);
+const panoAcildi = ref(false);
+
 const yeniProje = ref({
-  musteri: 'Bilinmiyor',
-  son_kullanici: 'Bilinmiyor',
-  lokasyon: 'Bilinmiyor',
-  proje_adi: 'Seçili Proje',
-  teklif_konusu: 'Pano Maliyet Analizi',
-  hazirlayan: 'Yetkili Personel', 
+  musteri: 'TEMKON Müşterisi',
+  son_kullanici: 'End User',
+  lokasyon: 'Ankara / Türkiye',
+  proje_adi: 'Endüstriyel Pano Projesi',
+  teklif_konusu: 'CPQ Pano Konfigürasyonu',
+  hazirlayan: 'Sude Özbay - İletişim Birim Başkanı', 
   teklif_tarihi: '06.07.2026',
-  teklif_referans_no: 'REF-2026-001'
+  teklif_referans_no: 'TEMKON-OFFER-2026'
 });
-// P1 MÜŞTERİ PDF TEKLİFİ OLUŞTURMA FONKSİYONU
-const pdfIndir = () => {
-  const element = document.getElementById('p1-teklif-sablonu');
-  
-  if (!element) {
-    alert("Teklif şablonu bulunamadı.");
-    return;
-  }
 
-  const secenekler = {
-    margin:       0,
-    filename:     `TEMKON_Teklif_Formu.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, logging: false },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-  };
-
-  // PDF üretme sürecini başlat
-  html2pdf().set(secenekler).from(element).save();
-};
-
-const excelIndir = () => {
-  if (!panoIcerigi.value || panoIcerigi.value.length === 0) {
-    alert("İndirilecek veri bulunmuyor. Lütfen önce bir görünüm seçin.");
-    return;
-  }
-  
-  const indirilecekVeri = panoIcerigi.value.map((item, index) => ({
-    "Sıra": index + 1,
-    "Pano Türü": item.pano || item.pano_turu,
-    "Sipariş Kodu": item.siparis_kodu,
-    "Ürün Adı": item.urun_adi,
-    "Marka": item.marka,
-    "Adet": item.adet,
-    "Birim Fiyat": item.liste_fiyati || item.birim_fiyat,
-    "Toplam Fiyat": item.toplam_fiyat || 0
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(indirilecekVeri);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Pano Malzemeleri");
-  XLSX.writeFile(workbook, "TEMKON_Maliyet_Tablosu.xlsx");
-};
-
-const verileriYukle = async () => {
-  try {
-    const response = await axios.get('http://127.0.0.1:8000/projeler/listele')
-    projeler.value = response.data
-  } catch (error) { console.error("Projeler yüklenemedi", error) }
-}
-// Filtreleme yapabilmemiz için 'computed' fonksiyonunu içeri aktardığından emin ol
-// Eğer en üstte import { ref } from 'vue' yazıyorsa onu import { ref, computed } from 'vue' olarak güncelle.
-
-// AÇILIR MENÜDEN SEÇİLENE GÖRE VERİLERİ SÜZEN FONKSİYON
 const filtrelenmisPanoIcerigi = computed(() => {
-  // Eğer henüz veri çekilmediyse boş liste dön
   if (!panoIcerigi.value || panoIcerigi.value.length === 0) return [];
-  
-  // "Tüm Panoları Getir" seçildiyse hiçbir şeyi süzme, hepsini göster
-  if (incelePanoTuru.value === 'TÜM PANOLAR' || !incelePanoTuru.value) {
-    return panoIcerigi.value;
-  }
-  
-  // "Tüm MCC'leri Birleştir" seçildiyse, pano adının içinde MCC geçenleri süz
-  if (incelePanoTuru.value === 'TÜM MCC LER') {
-    return panoIcerigi.value.filter(item => item.pano && item.pano.startsWith('MCC'));
-  }
-  
-  // "Tüm REM'leri Birleştir" seçildiyse, pano adının içinde REM geçenleri süz
-  if (incelePanoTuru.value === 'TÜM REM LER') {
-    return panoIcerigi.value.filter(item => item.pano && item.pano.startsWith('REM'));
-  }
-  
-  // Tek bir pano seçildiyse (Örn: 'ADP 1', 'MCC 2'), sadece ismi o olanları getir
+  if (incelePanoTuru.value === 'TÜM PANOLAR' || !incelePanoTuru.value) return panoIcerigi.value;
+  if (incelePanoTuru.value === 'TÜM MCC LER') return panoIcerigi.value.filter(item => item.pano && item.pano.startsWith('MCC'));
+  if (incelePanoTuru.value === 'TÜM REM LER') return panoIcerigi.value.filter(item => item.pano && item.pano.startsWith('REM'));
   return panoIcerigi.value.filter(item => item.pano === incelePanoTuru.value);
 });
 
@@ -306,11 +234,8 @@ const panoIcerigiGetir = async () => {
   if (!inceleProjeId.value || !incelePanoTuru.value) return;
   try {
     const response = await axios.get(`http://127.0.0.1:8000/projeler/${inceleProjeId.value}/maliyet-raporu`);
-    
-    // 1. DÜZELTME: .malzemeler yerine Python'dan gelen .detaylar ismini kullanıyoruz
     const tumMalzemeler = response.data.detaylar || []; 
     
-    // 2. DÜZELTME: m.pano_turu yerine Python'dan gelen m.pano ismini kullanıyoruz
     if (incelePanoTuru.value === "TÜM PANOLAR") {
       panoIcerigi.value = tumMalzemeler;
     } else if (incelePanoTuru.value === "TÜM MCC LER") {
@@ -322,15 +247,47 @@ const panoIcerigiGetir = async () => {
     }
     panoAcildi.value = true;
   } catch (error) { 
-    console.error("Kayıtlar çekilemedi", error) 
+    console.error("Kayıtlar çekilemedi", error);
   }
-}
-const cikisYap = () => {
-  localStorage.removeItem('girisYapildi')
-  router.push('/')
-}
+};
 
-onMounted(verileriYukle)
+const excelIndir = () => {
+  if (kullaniciRolu.value !== 'yonetici') return;
+  const worksheet = XLSX.utils.json_to_sheet(filtrelenmisPanoIcerigi.value);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Maliyet Analizi");
+  XLSX.writeFile(workbook, "TEMKON_Maliyet_Analizi.xlsx");
+};
+
+const pdfIndir = () => {
+  if (kullaniciRolu.value === 'saha_ekibi') return;
+  const element = document.getElementById('p1-teklif-sablonu');
+  if (!element) return alert("Şablon bulunamadı.");
+  const secenekler = {
+    margin: 0,
+    filename: `${yeniProje.value.proje_adi}_Teklif_Formu.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  html2pdf().set(secenekler).from(element).save();
+};
+
+const verileriYukle = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/projeler/listele');
+    projeler.value = response.data;
+  } catch (error) { console.error("Projeler yüklenemedi", error); }
+};
+
+const cikisYap = () => {
+  localStorage.removeItem('girisYapildi');
+  localStorage.removeItem('kullaniciRolu');
+  router.push('/');
+};
+
+onMounted(verileriYukle);
 </script>
 
 <style scoped>

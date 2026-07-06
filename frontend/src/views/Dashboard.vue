@@ -9,9 +9,9 @@
       
       <div class="menu-butonlari" style="display: flex; gap: 15px;">
         <button class="btn-menu aktif" style="background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
-        <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'iletisim_baskani'" @click="$router.push('/panolar')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button> 
-        <button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>
-      </div>
+  
+  <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi'" @click="$router.push('/panolar')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button>
+<button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>      </div>
     </div>
 
     <div class="ozet-kartlari-wrapper">
