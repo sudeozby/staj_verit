@@ -21,6 +21,12 @@ class IskontoGrubuEkle(BaseModel):
     satis_iskonto: float = 0.0
     notlar: Optional[str] = None
 
+
+class Kullanici(BaseModel):
+     kullanici_adi: str
+     sifre: str
+     rol: str
+
 # 3. MALZEME ŞABLONU (TEMKON Aktif Malzeme Listesi)
 class MalzemeEkle(BaseModel):
     siparis_kodu: str

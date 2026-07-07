@@ -2,13 +2,16 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Panolar from '../views/Panolar.vue'
+import EkipYonetimi from '../views/EkipYonetimi.vue' // Klasör yolun farklıysa ona göre ayarla
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'Login', component: Login },
     { path: '/panel', name: 'Dashboard', component: Dashboard },
-    { path: '/panolar', name: 'Panolar', component: Panolar }
+    { path: '/panolar', name: 'Panolar', component: Panolar },
+  {path: '/ekip',name: 'EkipYonetimi',component: EkipYonetimi},
+  {path: '/loglar',name: 'LogPaneli',component: () => import('../views/LogPanel.vue')}
   ]
 })
 

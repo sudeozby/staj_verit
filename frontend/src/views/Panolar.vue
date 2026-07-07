@@ -1,17 +1,7 @@
 <template>
   <div class="container">
-    <div class="ust-menu" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; border-top: 5px solid #2c3e50;">
-      <div class="logo-alani">
-        <h1 class="logo-yazisi" style="font-size: 28px; margin: 0;">TEM<span class="kirmizi">K</span>ON</h1>
-        <h2 style="font-size: 14px; margin: 0; color: #7f8c8d;">Maliyet Yönetim Paneli</h2>
-      </div>
-      
-      <div class="menu-butonlari" style="display: flex; gap: 15px;">
-        <button v-if="kullaniciRolu !== 'saha_ekibi'" @click="router.push('/panel')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
-        <button class="btn-menu aktif" style="background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button> 
-        <button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>
-      </div>
-    </div>
+    
+    <UstMenu />
 
     <div class="form-kutusu" style="background: white; padding: 30px; border-radius: 10px; border-left: 8px solid #8e44ad; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
       <h3>Kayıtlı Panoları İnceleme Ekranı</h3>
@@ -39,21 +29,30 @@
         <h4 style="margin-top: 0; margin-bottom: 15px; color: #8e44ad;">{{ incelePanoTuru }} İçeriği:</h4>
         
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <button v-if="kullaniciRolu === 'yonetici'" @click="excelIndir" style="background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+          <button @click="excelIndir" style="background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
             📊 Excel Olarak İndir
           </button>
-
-          <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi'" @click="pdfIndir" style="background-color: #e74c3c; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+          <button v-if="kullaniciRolu !== 'saha_ekibi'" @click="pdfIndir" style="background-color: #e74c3c; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
             📄 Müşteri Teklifi (PDF) İndir
           </button>
         </div>
 
-        <table v-if="kullaniciRolu === 'yonetici'" class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
+        <div v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi'" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 15px;">
+          <button @click="seciliTablo = 'satis'" :style="seciliTablo === 'satis' ? 'background-color: #34495e; color: white;' : 'background-color: #ecf0f1; color: #2c3e50;'" style="padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+            🛍️ Müşteri Satış Tablosu
+          </button>
+          <button v-if="kullaniciRolu === 'yonetici'" @click="seciliTablo = 'maliyet'" :style="seciliTablo === 'maliyet' ? 'background-color: #c00000; color: white;' : 'background-color: #ecf0f1; color: #2c3e50;'" style="padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+            💼 Yönetim Maliyet Tablosu
+          </button>
+          <button @click="seciliTablo = 'grafik'" :style="seciliTablo === 'grafik' ? 'background-color: #8e44ad; color: white;' : 'background-color: #ecf0f1; color: #2c3e50;'" style="padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+            📊 Döviz & Kâr Dashboard
+          </button>
+        </div>
+
+        <table v-if="kullaniciRolu === 'teklif_ekibi' || (kullaniciRolu === 'yonetici' && seciliTablo === 'satis')" class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
           <thead>
             <tr>
-              <th colspan="9" style="background-color: #ffc000; color: #000; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">
-                PROJEYE SATIŞ ŞARTLARI GEÇERLİ (YÖNETİCİ EKRANI)
-              </th>
+              <th colspan="9" style="background-color: #ffc000; color: #000; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">PROJE SATIŞ VE FİYATLANDIRMA LİSTESİ</th>
             </tr>
             <tr style="background-color: #9bc2e6; color: #005a8c;">
               <th style="border: 1px solid #000; padding: 10px;">PANO TÜRÜ</th>
@@ -82,12 +81,86 @@
           </tbody>
         </table>
 
-        <table v-else class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
+        <div v-if="kullaniciRolu === 'yonetici' && seciliTablo === 'maliyet'">
+          <div style="background: #fdf2e9; padding: 15px 25px; border-radius: 8px; border-left: 5px solid #d35400; margin-bottom: 20px; display: flex; gap: 30px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div>
+              <label style="font-weight: bold; color: #d35400; font-size: 13px;">🎯 Genel Kâr Marjı (%):</label><br>
+              <input type="number" v-model="genelKarMarji" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 140px; margin-top: 5px; font-weight: bold; font-size: 15px;">
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #d35400; font-size: 13px;">👷‍♂️ Toplam İşçilik / Saha Gideri (₺):</label><br>
+              <input type="number" v-model="iscilikGideri" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 200px; margin-top: 5px; font-weight: bold; font-size: 15px;">
+            </div>
+            <div style="margin-left: auto; text-align: right; background: white; padding: 10px 15px; border-radius: 6px; border: 1px dashed #d35400;">
+              <span style="font-size: 13px; color: #d35400; font-weight: bold;">⚡ Simülasyon Aktif</span><br>
+              <span style="font-size: 11px; color: #7f8c8d;">Değerleri değiştirdiğiniz an tablo f(x) güncellenir.</span>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000; min-width: 1200px;">
+              <thead>
+                <tr>
+                  <th colspan="13" style="background-color: #ffc000; color: #000; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">PROJEYE SATIŞ ŞARTLARI GEÇERLİ</th>
+                </tr>
+                <tr style="background-color: #9bc2e6; color: #005a8c;">
+                  <th style="border: 1px solid #000; padding: 10px;">SIRA</th>
+                  <th style="border: 1px solid #000; padding: 10px;">MALİYET KALEMİ</th>
+                  <th style="border: 1px solid #000; padding: 10px;">MALİYET GRUBU</th>
+                  <th style="border: 1px solid #000; padding: 10px;">MALİYET TRY</th>
+                  <th style="border: 1px solid #000; padding: 10px;">MALİYET EUR</th>
+                  <th style="border: 1px solid #000; padding: 10px;">MALİYET USD</th>
+                  <th style="border: 1px solid #000; padding: 10px;">TEKLİF BEDELİ</th>
+                  <th style="border: 1px solid #000; padding: 10px;">± % İSK.</th>
+                  <th style="border: 1px solid #000; padding: 10px; color: #c00000;">f(x) NET FİYAT</th>
+                  <th style="border: 1px solid #000; padding: 10px;">ADET/SET</th>
+                  <th style="border: 1px solid #000; padding: 10px; color: #c00000;">f(x) TOPLAM</th>
+                  <th style="border: 1px solid #000; padding: 10px;">KUR</th>
+                  <th style="border: 1px solid #000; padding: 10px;">TEKLİF SONUNDA DETAY VERİLECEKLER</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="text-align: center; border-bottom: 1px solid #ccc; background-color: #f2f2f2;">
+                  <td style="border: 1px solid #000; padding: 8px;">{{ index + 1 }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; text-align: left; background-color: white;">{{ item.malzeme }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; background-color: white;">{{ item.pano }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.para_birimi === 'TRY' ? item.birim_proje_tl : (item.birim_proje_tl * item.kur_degeri).toFixed(2) }} ₺</td>
+                  <td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'EUR' ? item.birim_proje_tl + ' €' : '-' }}</td>
+                  <td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'USD' ? item.birim_proje_tl + ' $' : '-' }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">{{ (item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)).toFixed(2) }} ₺</td>
+                  <td style="border: 1px solid #000; padding: 8px;">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">{{ ((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))).toFixed(2) }} ₺</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.adet }}</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">{{ (((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))) * item.adet).toFixed(2) }} ₺</td>
+                  <td style="border: 1px solid #000; padding: 8px;">{{ item.kur_degeri }} ({{ item.para_birimi }})</td>
+                  <td style="border: 1px solid #000; padding: 8px; background-color: white;">-</td>
+                </tr>
+              </tbody>
+              <tfoot v-if="filtrelenmisPanoIcerigi.length > 0">
+                <tr style="background-color: #2c3e50; color: white; font-weight: bold;">
+                  <td colspan="10" style="text-align: right; padding: 10px; border: 1px solid #000;">ARA TOPLAM (MALZEME):</td>
+                  <td style="padding: 10px; border: 1px solid #000;">{{ dinamikAraToplam.toFixed(2) }} ₺</td>
+                  <td colspan="2" style="border: 1px solid #000;"></td>
+                </tr>
+                <tr style="background-color: #34495e; color: white; font-weight: bold;">
+                  <td colspan="10" style="text-align: right; padding: 10px; border: 1px solid #000;">İŞÇİLİK / SAHA GİDERİ:</td>
+                  <td style="padding: 10px; border: 1px solid #000;">+ {{ iscilikGideri || 0 }} ₺</td>
+                  <td colspan="2" style="border: 1px solid #000;"></td>
+                </tr>
+                <tr style="background-color: #c0392b; color: white; font-weight: bold; font-size: 15px;">
+                  <td colspan="10" style="text-align: right; padding: 12px; border: 1px solid #000;">GENEL PROJE SATIŞ BEDELİ:</td>
+                  <td style="padding: 12px; border: 1px solid #000; color: #f1c40f;">{{ (dinamikAraToplam + (iscilikGideri || 0)).toFixed(2) }} ₺</td>
+                  <td colspan="2" style="border: 1px solid #000;"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <table v-if="kullaniciRolu === 'saha_ekibi'" class="maliyet-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #000;">
           <thead>
             <tr>
-              <th colspan="5" style="background-color: #34495e; color: white; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">
-                TEKNİK KONFİGÜRASYON VE MALZEME LİSTESİ (İMALAT / TEKLİF)
-              </th>
+              <th colspan="5" style="background-color: #34495e; color: white; text-align: center; border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 14px;">TEKNİK KONFİGÜRASYON VE MALZEME LİSTESİ (SAHA / İMALAT)</th>
             </tr>
             <tr style="background-color: #ecf0f1; color: #2c3e50;">
               <th style="border: 1px solid #000; padding: 10px; width: 10%;">SIRA</th>
@@ -107,6 +180,36 @@
             </tr>
           </tbody>
         </table>
+
+        <div v-if="(kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi') && seciliTablo === 'grafik'" style="background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #ddd;">
+          <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #8e44ad; padding-bottom: 10px;">Proje Risk ve Kâr Simülasyonu</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center;">
+              <h4 style="margin-top: 0; color: #34495e;">Maliyetlerin Döviz Dağılımı (₺ Karşılığı)</h4>
+              <div :style="{ background: dovizDagilimi.pastaCss }" style="width: 200px; height: 200px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: 20px 0;"></div>
+              <div style="width: 100%; display: flex; justify-content: space-around; font-weight: bold; font-size: 13px;">
+                <div style="color: #2980b9;">🟦 TRY: %{{ dovizDagilimi.tryYuzde.toFixed(1) }}</div>
+                <div style="color: #c0392b;">🟥 EUR: %{{ dovizDagilimi.eurYuzde.toFixed(1) }}</div>
+                <div style="color: #f39c12;">🟨 USD: %{{ dovizDagilimi.usdYuzde.toFixed(1) }}</div>
+              </div>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+              <h4 style="margin-top: 0; color: #34495e;">Satış Fiyatı ve Kâr Belirleme</h4>
+              <div style="background: #fdf2e9; padding: 15px; border-radius: 6px; border-left: 4px solid #d35400; margin-bottom: 20px;">
+                <label style="font-weight: bold; color: #d35400; font-size: 13px;">🎯 Uygulanacak Kâr Marjı (%):</label>
+                <input type="number" v-model="genelKarMarji" style="width: 100%; padding: 10px; margin-top: 5px; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                <label style="font-weight: bold; color: #d35400; font-size: 13px; display: block; margin-top: 15px;">👷‍♂️ İşçilik / Saha Gideri (₺):</label>
+                <input type="number" v-model="iscilikGideri" style="width: 100%; padding: 10px; margin-top: 5px; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+              </div>
+              <div style="border: 2px dashed #27ae60; padding: 15px; border-radius: 6px; text-align: right; background: #f9fff9;">
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: #555;">Saf Malzeme Maliyeti: <b>{{ dovizDagilimi.genelToplam.toFixed(2) }} ₺</b></p>
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: #555;">Kâr + İşçilik Hedefi: <b style="color: #27ae60;">+ {{ ((dinamikAraToplam + iscilikGideri) - dovizDagilimi.genelToplam).toFixed(2) }} ₺</b></p>
+                <hr style="border: 0; border-top: 1px solid #ccc; margin: 10px 0;">
+                <h3 style="margin: 0; color: #27ae60; font-size: 22px;">TEKLİF BEDELİ: {{ (dinamikAraToplam + iscilikGideri).toFixed(2) }} ₺</h3>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
 
@@ -190,6 +293,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -199,18 +303,26 @@ import * as XLSX from 'xlsx';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import UstMenu from '../components/UstMenu.vue';
 
 const router = useRouter();
 
-// ROL KONTROLÜ (yonetici, teklif_ekibi, saha_ekibi)
+// ROL KONTROLÜ VE SEKME YÖNETİMİ
 const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'saha_ekibi');
+const seciliTablo = ref('satis');
 
+// PANO VE PROJE DEĞİŞKENLERİ
 const projeler = ref([]);
 const inceleProjeId = ref('');
 const incelePanoTuru = ref('');
 const panoIcerigi = ref([]);
 const panoAcildi = ref(false);
 
+// SİMÜLASYON DEĞİŞKENLERİ
+const genelKarMarji = ref(20); 
+const iscilikGideri = ref(0);
+
+// PDF İÇİN ŞABLON BİLGİLERİ
 const yeniProje = ref({
   musteri: 'TEMKON Müşterisi',
   son_kullanici: 'End User',
@@ -222,6 +334,8 @@ const yeniProje = ref({
   teklif_referans_no: 'TEMKON-OFFER-2026'
 });
 
+// --- HESAPLAMALAR VE FİLTRELER (COMPUTED) ---
+
 const filtrelenmisPanoIcerigi = computed(() => {
   if (!panoIcerigi.value || panoIcerigi.value.length === 0) return [];
   if (incelePanoTuru.value === 'TÜM PANOLAR' || !incelePanoTuru.value) return panoIcerigi.value;
@@ -230,21 +344,57 @@ const filtrelenmisPanoIcerigi = computed(() => {
   return panoIcerigi.value.filter(item => item.pano === incelePanoTuru.value);
 });
 
+const dinamikAraToplam = computed(() => {
+  if (!filtrelenmisPanoIcerigi.value) return 0;
+  return filtrelenmisPanoIcerigi.value.reduce((toplam, item) => {
+    const teklifBedeli = item.birim_proje_tl * (1 + (genelKarMarji.value || 0) / 100);
+    const netFiyat = teklifBedeli * (1 - (item.iskonto_orani || 0));
+    return toplam + (netFiyat * item.adet);
+  }, 0);
+});
+
+const dovizDagilimi = computed(() => {
+  let tryMaliyet = 0;
+  let eurMaliyetTL = 0;
+  let usdMaliyetTL = 0;
+
+  let eurRaw = 0;
+  let usdRaw = 0;
+
+  (filtrelenmisPanoIcerigi.value || []).forEach(item => {
+    const safTutar = item.birim_proje_tl * item.adet;
+    if (item.para_birimi === 'TRY') {
+      tryMaliyet += safTutar;
+    } else if (item.para_birimi === 'EUR') {
+      eurMaliyetTL += (safTutar * item.kur_degeri);
+      eurRaw += safTutar;
+    } else if (item.para_birimi === 'USD') {
+      usdMaliyetTL += (safTutar * item.kur_degeri);
+      usdRaw += safTutar;
+    }
+  });
+
+  const genelToplam = tryMaliyet + eurMaliyetTL + usdMaliyetTL;
+  const tryYuzde = genelToplam ? (tryMaliyet / genelToplam) * 100 : 0;
+  const eurYuzde = genelToplam ? (eurMaliyetTL / genelToplam) * 100 : 0;
+  const usdYuzde = genelToplam ? (usdMaliyetTL / genelToplam) * 100 : 0;
+
+  const pastaCss = `conic-gradient(#3498db 0% ${tryYuzde}%, #e74c3c ${tryYuzde}% ${tryYuzde + eurYuzde}%, #f1c40f ${tryYuzde + eurYuzde}% 100%)`;
+
+  return {
+    tryMaliyet, eurMaliyetTL, usdMaliyetTL, 
+    eurRaw, usdRaw, genelToplam,
+    tryYuzde, eurYuzde, usdYuzde, pastaCss
+  };
+});
+
+// --- VERİ ÇEKME VE İNDİRME FONKSİYONLARI ---
+
 const panoIcerigiGetir = async () => {
   if (!inceleProjeId.value || !incelePanoTuru.value) return;
   try {
     const response = await axios.get(`http://127.0.0.1:8000/projeler/${inceleProjeId.value}/maliyet-raporu`);
-    const tumMalzemeler = response.data.detaylar || []; 
-    
-    if (incelePanoTuru.value === "TÜM PANOLAR") {
-      panoIcerigi.value = tumMalzemeler;
-    } else if (incelePanoTuru.value === "TÜM MCC LER") {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano.includes('MCC'));
-    } else if (incelePanoTuru.value === "TÜM REM LER") {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano.includes('REM'));
-    } else {
-      panoIcerigi.value = tumMalzemeler.filter(m => m.pano === incelePanoTuru.value);
-    }
+    panoIcerigi.value = response.data.detaylar || []; 
     panoAcildi.value = true;
   } catch (error) { 
     console.error("Kayıtlar çekilemedi", error);
@@ -252,11 +402,71 @@ const panoIcerigiGetir = async () => {
 };
 
 const excelIndir = () => {
-  if (kullaniciRolu.value !== 'yonetici') return;
-  const worksheet = XLSX.utils.json_to_sheet(filtrelenmisPanoIcerigi.value);
+  let indirilecekVeri = [];
+  let sekmeAdi = "";
+  let dosyaAdi = "";
+
+  if (kullaniciRolu.value === 'saha_ekibi') {
+    indirilecekVeri = filtrelenmisPanoIcerigi.value.map((item, index) => ({
+      "Sıra": index + 1,
+      "Pano Türü": item.pano,
+      "Sipariş Kodu": item.siparis_kodu || 'M-CODE-' + index,
+      "Malzeme Adı": item.malzeme,
+      "Adet": item.adet
+    }));
+    sekmeAdi = "Malzeme Listesi";
+    dosyaAdi = "TEMKON_Saha_Malzeme_Listesi.xlsx";
+  } else if (kullaniciRolu.value === 'yonetici' && seciliTablo.value === 'maliyet') {
+    const karCani = 1 + (genelKarMarji.value || 0) / 100;
+    
+    indirilecekVeri = filtrelenmisPanoIcerigi.value.map((item, index) => {
+      const teklifBedeli = item.birim_proje_tl * karCani;
+      const iskontoMultiplier = 1 - (item.iskonto_orani || 0);
+      const netFiyat = teklifBedeli * iskontoMultiplier;
+      const toplam = netFiyat * item.adet;
+      
+      return {
+        "Sıra": index + 1,
+        "Maliyet Kalemi": item.malzeme,
+        "Maliyet Grubu": item.pano,
+        "Maliyet TRY": item.para_birimi === 'TRY' ? item.birim_proje_tl + " ₺" : (item.birim_proje_tl * item.kur_degeri).toFixed(2) + " ₺",
+        "Maliyet EUR": item.para_birimi === 'EUR' ? item.birim_proje_tl + " €" : '-',
+        "Maliyet USD": item.para_birimi === 'USD' ? item.birim_proje_tl + " $" : '-',
+        "Teklif Bedeli (₺)": teklifBedeli.toFixed(2) + " ₺",
+        "İskonto (%)": "% " + (item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0'),
+        "Net Fiyat (₺)": netFiyat.toFixed(2) + " ₺",
+        "Adet/Set": item.adet,
+        "Toplam (₺)": toplam.toFixed(2) + " ₺",
+        "Kur": `${item.kur_degeri} (${item.para_birimi})`
+      };
+    });
+
+    indirilecekVeri.push({});
+    indirilecekVeri.push({ "Adet/Set": "ARA TOPLAM:", "Toplam (₺)": dinamikAraToplam.value.toFixed(2) + " ₺" });
+    indirilecekVeri.push({ "Adet/Set": "İŞÇİLİK/SAHA GİDERİ:", "Toplam (₺)": "+ " + (iscilikGideri.value || 0).toString() + " ₺" });
+    indirilecekVeri.push({ "Adet/Set": "GENEL SATIŞ BEDELİ:", "Toplam (₺)": (dinamikAraToplam.value + (iscilikGideri.value || 0)).toFixed(2) + " ₺" });
+
+    sekmeAdi = "Simülasyon Analizi";
+    dosyaAdi = "TEMKON_Yonetim_Maliyet_Simulasyonu.xlsx";
+  } else {
+    indirilecekVeri = filtrelenmisPanoIcerigi.value.map(item => ({
+      "Pano Türü": item.pano,
+      "Malzeme Adı": item.malzeme,
+      "Liste Fiyatı": `${item.liste_fiyati} ${item.para_birimi}`,
+      "İskonto (%)": item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0',
+      "Net Fiyat (₺)": item.birim_proje_tl,
+      "Adet": item.adet,
+      "Toplam (₺)": item.toplam_proje_tl,
+      "Kur": item.kur_degeri
+    }));
+    sekmeAdi = "Maliyet Analizi";
+    dosyaAdi = "TEMKON_Satis_Fiyatlandirma.xlsx";
+  }
+
+  const worksheet = XLSX.utils.json_to_sheet(indirilecekVeri);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Maliyet Analizi");
-  XLSX.writeFile(workbook, "TEMKON_Maliyet_Analizi.xlsx");
+  XLSX.utils.book_append_sheet(workbook, worksheet, sekmeAdi);
+  XLSX.writeFile(workbook, dosyaAdi);
 };
 
 const pdfIndir = () => {

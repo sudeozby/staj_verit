@@ -4,8 +4,38 @@ from app.models.schemas import ProjeEkle, IskontoGrubuEkle, MalzemeEkle, ProjePa
 from app.db import crud  # Senin harika depocu mimarin
 from app.services.tcmb_service import fetch_tcmb_rates
 
+from pydantic import BaseModel
+from fastapi import HTTPException
+
+
 router = APIRouter()
 
+
+
+# Vue'dan gelecek giriş verisinin şablonu
+class GirisBilgileri(BaseModel):
+    kullanici_adi: str
+    sifre: str
+
+@router.post("/giris-yap")
+def giris_yap(bilgiler: GirisBilgileri):
+    with get_db_session() as cur:
+        # Veritabanında bu kullanıcı adı ve şifreye sahip biri var mı bakıyoruz
+        cur.execute(
+            "SELECT rol FROM kullanicilar WHERE kullanici_adi = %s AND sifre = %s", 
+            (bilgiler.kullanici_adi, bilgiler.sifre)
+        )
+        sonuc = cur.fetchone()
+        
+        # Eğer kayıt yoksa (yanlış şifre) hata fırlat
+        if not sonuc:
+            raise HTTPException(status_code=401, detail="Hatalı kullanıcı adı veya şifre!")
+            
+        # Eğer doğruysa kişinin rolünü geri gönder
+        return {"mesaj": "Giriş başarılı", "rol": sonuc[0]}
+    
+
+    
 # --- PROJELER ---
 @router.get("/projeler")
 def projeleri_getir():

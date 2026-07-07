@@ -1,18 +1,13 @@
 <template>
   <div class="container">
     
-    <div class="ust-menu" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; border-top: 5px solid #2c3e50;">
-      <div class="logo-alani">
-        <h1 class="logo-yazisi" style="font-size: 28px; margin: 0;">TEM<span class="kirmizi">K</span>ON</h1>
-        <h2 style="font-size: 14px; margin: 0; color: #7f8c8d;">CPQ Maliyet Yönetim Paneli</h2>
-      </div>
-      
-      <div class="menu-butonlari" style="display: flex; gap: 15px;">
-        <button class="btn-menu aktif" style="background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Ana Panel</button>
-  
-  <button v-if="kullaniciRolu === 'yonetici' || kullaniciRolu === 'teklif_ekibi'" @click="$router.push('/panolar')" class="btn-menu" style="background-color: #ecf0f1; color: #2c3e50; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Panolar</button>
-<button @click="cikisYap" class="btn-cikis" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>      </div>
-    </div>
+
+    <UstMenu /> 
+
+
+
+
+
 
     <div class="ozet-kartlari-wrapper">
       <div class="kart maliyet-karti">
@@ -114,6 +109,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import UstMenu from '../components/UstMenu.vue';
 
 const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'standart')
 const router = useRouter()
