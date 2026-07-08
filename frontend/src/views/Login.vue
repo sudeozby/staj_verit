@@ -71,11 +71,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue'; // ref ve onMounted'ı burada birleştirdik
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_BASE } from '../config';
 
 const router = useRouter();
+
 
 // Değişkenlerimiz
 const kullaniciAdi = ref('');
@@ -83,13 +85,22 @@ const sifre = ref('');
 const girisHatasi = ref(false);
 const sifreModalAcik = ref(false);
 
+
+onMounted(() => {
+  if (!localStorage.getItem('girisYapildi')) {
+    router.push('/'); // Giriş yapmadıysa zorla login sayfasına at
+  }
+});
+
 // Python (FastAPI) Arka Ucuna Bağlanan Güvenlik Kapısı
 const girisKontrol = async () => {
   // Her denemede hata mesajını önce bir gizleyelim
   girisHatasi.value = false;
 
   try {
-    const response = await axios.post('http://127.0.0.1:8000/giris-yap', {
+
+    // Sabit URL yerine API_BASE yerleştirildi
+     const response = await axios.post(`${API_BASE}/giris-yap`, {
       kullanici_adi: kullaniciAdi.value,
       sifre: sifre.value
     });

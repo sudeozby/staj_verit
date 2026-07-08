@@ -35,13 +35,25 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
+import { API_BASE } from '../config'; // Merkezî URL import edildi
+
 
 const router = useRouter();
 const loglar = ref([]);
 
+
+onMounted(() => {
+  if (!localStorage.getItem('girisYapildi')) {
+    router.push('/');
+    return;
+  }
+  loglariGetir();
+});
+
+
 const loglariGetir = async () => {
   try {
-    const res = await axios.get('http://127.0.0.1:8000/loglar');
+   const res = await axios.get(`${API_BASE}/loglar`);
     // Veritabanından gelen veriyi ters çevirerek en son işlemin en üstte görünmesini sağla
     loglar.value = res.data.reverse(); 
   } catch (error) {
@@ -50,7 +62,6 @@ const loglariGetir = async () => {
   }
 };
 
-onMounted(loglariGetir);
 
 const cikisYap = () => {
   localStorage.removeItem('girisYapildi');

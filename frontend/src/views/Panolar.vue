@@ -304,8 +304,16 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
+import { API_BASE } from '../config'; // Merkezî URL import edildi
 
 const router = useRouter();
+onMounted(() => {
+  if (!localStorage.getItem('girisYapildi')) {
+    router.push('/');
+    return;
+  }
+  verileriYukle();
+});
 
 // ROL KONTROLÜ VE SEKME YÖNETİMİ
 const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'saha_ekibi');
@@ -393,7 +401,7 @@ const dovizDagilimi = computed(() => {
 const panoIcerigiGetir = async () => {
   if (!inceleProjeId.value || !incelePanoTuru.value) return;
   try {
-    const response = await axios.get(`http://127.0.0.1:8000/projeler/${inceleProjeId.value}/maliyet-raporu`);
+   const response = await axios.get(`${API_BASE}/projeler/${inceleProjeId.value}/maliyet-raporu`);
     panoIcerigi.value = response.data.detaylar || []; 
     panoAcildi.value = true;
   } catch (error) { 
@@ -486,7 +494,7 @@ const pdfIndir = () => {
 
 const verileriYukle = async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/projeler/listele');
+    const response = await axios.get('${API_BASE}/projeler/listele');
     projeler.value = response.data;
   } catch (error) { console.error("Projeler yüklenemedi", error); }
 };

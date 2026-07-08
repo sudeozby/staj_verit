@@ -1,26 +1,15 @@
 <template>
   <div class="container">
-    
-
-    <UstMenu /> 
-
-
-
-
-
+    <UstMenu />
 
     <div class="ozet-kartlari-wrapper">
-      <div class="kart maliyet-karti">
-        <span class="baslik">TOPLAM MALİYET</span>
-        <span class="deger">{{ genelToplamlar.maliyet_tl || 0 }} ₺</span>
-      </div>
-      <div class="kart proje-karti">
-        <span class="baslik">TOPLAM PROJE</span>
-        <span class="deger">{{ genelToplamlar.proje_tl || 0 }} ₺</span>
-      </div>
-      <div class="kart satis-karti">
-        <span class="baslik">TOPLAM SATIŞ</span>
-        <span class="deger">{{ genelToplamlar.satis_tl || 0 }} ₺</span>
+      <div 
+        v-for="kart in ozetKartlari" 
+        :key="kart.baslik" 
+        :class="['kart', kart.sinif]"
+      >
+        <span class="baslik">{{ kart.baslik }}</span>
+        <span class="deger">{{ kart.deger || 0 }} ₺</span>
       </div>
     </div>
 
@@ -30,12 +19,12 @@
         <h3>Proje Kimlik Bilgileri</h3>
         <div class="form-grubu">
           <div class="ikili-sutun">
-            <input v-model="yeniProje.musteri" placeholder="Müşteri" />
+            <input v-model="yeniProje.musteri" placeholder="Müşteri" required />
             <input v-model="yeniProje.son_kullanici" placeholder="Son Kullanıcı" />
           </div>
           <div class="ikili-sutun">
             <input v-model="yeniProje.lokasyon" placeholder="Lokasyon" />
-            <input v-model="yeniProje.proje_adi" placeholder="Proje Adı" />
+            <input v-model="yeniProje.proje_adi" placeholder="Proje Adı" required />
           </div>
           <input v-model="yeniProje.teklif_konusu" placeholder="Teklif Konusu" class="tam-genislik" />
           <div class="ikili-sutun">
@@ -43,7 +32,10 @@
             <input v-model="yeniProje.teklif_referans_no" placeholder="Referans No" />
           </div>
           <input v-model="yeniProje.hazirlayan" placeholder="Teklifi Hazırlayan" class="tam-genislik" />
-          <button @click="projeOlustur" class="btn-kaydet">Projeyi Oluştur</button>
+          
+          <button @click="projeOlustur" :disabled="isSubmitting" class="btn-kaydet">
+            {{ isSubmitting ? 'Kaydediliyor...' : 'Projeyi Oluştur' }}
+          </button>
         </div>
       </div>
 
@@ -51,8 +43,8 @@
         <h3>Depoya Yeni Malzeme Ekle</h3>
         <div class="form-grubu">
           <div class="ikili-sutun">
-            <input v-model="yeniMalzeme.siparis_kodu" placeholder="Sipariş Kodu" />
-            <input v-model="yeniMalzeme.urun_adi" placeholder="Ürün Adı" />
+            <input v-model="yeniMalzeme.siparis_kodu" placeholder="Sipariş Kodu" required />
+            <input v-model="yeniMalzeme.urun_adi" placeholder="Ürün Adı" required />
           </div>
           <div class="uclu-sutun">
             <input v-model="yeniMalzeme.marka" placeholder="Marka" />
@@ -60,8 +52,8 @@
             <input v-model="yeniMalzeme.tedarikci" placeholder="Tedarikçi" />
           </div>
           <div class="ikili-sutun">
-            <input v-model="yeniMalzeme.liste_fiyati" type="number" placeholder="Liste Fiyatı" />
-            <select v-model="yeniMalzeme.para_birimi">
+            <input v-model="yeniMalzeme.liste_fiyati" type="number" placeholder="Liste Fiyatı" required />
+            <select v-model="yeniMalzeme.para_birimi" required>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
               <option value="TRY">TRY</option>
@@ -73,229 +65,222 @@
 
       <div class="form-kutusu pano-konfig-formu">
         <h3>Panoya Malzeme Atama</h3>
-        <div class="form-grubu" style="display: flex; flex-direction: column; gap: 15px;">
-          <select v-model="yeniPanoMalzeme.proje_id" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        <div class="form-grubu">
+          <select v-model="yeniPanoMalzeme.proje_id">
             <option disabled value="">Proje Seçin...</option>
-            <option v-for="p in projeler" :key="p.id || p[0]" :value="p.id || p[0]">
-              {{ p.proje_adi || p[1] }}
-            </option>
+            <option v-for="p in projeler" :key="p.id" :value="p.id">{{ p.proje_adi }}</option>
           </select>
 
-          <select v-model="yeniPanoMalzeme.malzeme_id" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+          <select v-model="yeniPanoMalzeme.malzeme_id">
             <option disabled value="">Malzeme Seçin...</option>
-            <option v-for="m in malzemeler" :key="m.id || m[0]" :value="m.id || m[0]">
-              {{ m.urun_adi || m[1] }}
-            </option>
+            <option v-for="m in malzemeler" :key="m.id" :value="m.id">{{ m.urun_adi }} ({{ m.siparis_kodu }})</option>
           </select>
 
           <div class="ikili-sutun">
-            <select v-model="yeniPanoMalzeme.pano_turu" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-              <option disabled value="">Pano Türü Seçin</option>
-              <option v-for="pano in ['ADP 1', 'MCC 1', 'MCC 2', 'MCC 3', 'MCC 4', 'MCC 5', 'REM 100', 'REM 200', 'REM 300', 'REM 400', 'REM 500', 'KONTROL S.', 'SAHA']" :key="pano" :value="pano">{{ pano }}</option>
+            <select v-model="yeniPanoMalzeme.pano_turu">
+              <option value="ADP 1">ADP 1</option>
+              <option value="MCC 1">MCC 1</option>
+              <option value="SAHA">SAHA</option>
             </select>
-            <input v-model="yeniPanoMalzeme.adet" type="number" placeholder="Adet" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;"/>
+            <input v-model="yeniPanoMalzeme.adet" type="number" placeholder="Adet" />
           </div>
           
           <button @click="panoyaEkle" class="btn-kaydet btn-pano">Malzemeyi Panoya Ekle</button>
         </div>
       </div>
-
-      <div v-if="mesaj" :class="['bildirim', { hata: hataVar }]">{{ mesaj }}</div>
     </div>
+
+    <transition name="fade">
+      <div 
+        v-if="mesaj" 
+        :class="['bildirim', hataVar ? 'hata' : '']"
+        @click="mesaj = ''" 
+      >
+        {{ mesaj }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-import UstMenu from '../components/UstMenu.vue';
+import UstMenu from '../components/UstMenu.vue'
 
-const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'standart')
+// --- ROUTER VE ROL YÖNETİMİ ---
 const router = useRouter()
+const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu') || 'standart')
+const isSubmitting = ref(false)
 
-// EKSİK OLAN DEĞİŞKENİ BURAYA EKLEDİK (BEYAZ EKRANIN SEBEBİ BUYDU)
-const genelToplamlar = ref({ maliyet_tl: 0, proje_tl: 0, satis_tl: 0 });
-
-const cikisYap = () => {
-  localStorage.removeItem('girisYapildi')
-  router.push('/') 
-}
-
+// --- DATA ---
+const genelToplamlar = ref({ maliyet_tl: 0, proje_tl: 0, satis_tl: 0 })
 const mesaj = ref('')
 const hataVar = ref(false)
-const seciliProjeId = ref(1)
-const rapor = ref(null)
-const secilenProjeIsmi = ref('')
-const secilenMalzemeIsmi = ref('')
+
 const projeler = ref([])
 const malzemeler = ref([])
 
-const yeniProje = ref({ proje_adi: '', musteri: '', son_kullanici: '', lokasyon: '', teklif_konusu: '', teklif_tarihi: '', teklif_referans_no: '', hazirlayan: '' })
-const yeniMalzeme = ref({ siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', tedarikci: '', liste_fiyati: null, para_birimi: 'USD', grup_iskonto_id: 1 })
-const yeniPanoMalzeme = ref({ proje_id: '', malzeme_id: '', pano_turu: 'ADP 1', adet: 1 })
+// --- ÖZET KARTLARI (Dinamik) ---
+const ozetKartlari = computed(() => [
+  { baslik: 'TOPLAM MALİYET', deger: genelToplamlar.value?.maliyet_tl || 0, sinif: 'maliyet-karti' },
+  { baslik: 'TOPLAM PROJE', deger: genelToplamlar.value?.proje_tl || 0, sinif: 'proje-karti' },
+  { baslik: 'TOPLAM SATIŞ', deger: genelToplamlar.value?.satis_tl || 0, sinif: 'satis-karti' }
+])
 
+// --- FORM VERİLERİ ---
+const yeniProje = ref({ 
+  proje_adi: '', musteri: '', son_kullanici: '', lokasyon: '', 
+  teklif_konusu: '', teklif_tarihi: '', teklif_referans_no: '', hazirlayan: '' 
+})
+
+const yeniMalzeme = ref({ 
+  siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', 
+  tedarikci: '', liste_fiyati: null, para_birimi: 'USD' 
+})
+
+const yeniPanoMalzeme = ref({ 
+  proje_id: '', malzeme_id: '', pano_turu: 'ADP 1', adet: 1 
+})
+
+// --- FONKSİYONLAR ---
 const bildirimGoster = (metin, hata = false) => {
-  mesaj.value = metin; hataVar.value = hata;
-  setTimeout(() => { mesaj.value = '' }, 4000);
+  mesaj.value = metin
+  hataVar.value = hata
+  setTimeout(() => { mesaj.value = ''; hataVar.value = false }, 5000)
 }
 
+const cikisYap = () => {
+  localStorage.removeItem('girisYapildi')
+  localStorage.removeItem('kullaniciRolu')
+  router.push('/')
+}
+
+// --- API İSTEKLERİ ---
 const verileriYukle = async () => {
   try {
     const [p, m] = await Promise.all([
       axios.get('http://127.0.0.1:8000/projeler/listele'),
       axios.get('http://127.0.0.1:8000/malzemeler/listele')
-    ]);
-    projeler.value = p.data;
-    malzemeler.value = m.data;
-  } catch (error) { console.error("Veriler yüklenemedi:", error); }
+    ])
+    projeler.value = p.data
+    malzemeler.value = m.data
+  } catch (error) { 
+    bildirimGoster("Veriler yüklenirken bağlantı hatası!", true) 
+  }
 }
 
 const projeOlustur = async () => {
-  if (!yeniProje.value.proje_adi) return bildirimGoster("Lütfen Proje Adı girin!", true);
+  if (!yeniProje.value.proje_adi) return bildirimGoster("Lütfen Proje Adı girin!", true)
+  isSubmitting.value = true
   try {
-    await axios.post('http://127.0.0.1:8000/projeler', yeniProje.value)
-    bildirimGoster("Proje başarıyla oluşturuldu! ✅")
+    const res = await axios.post('http://127.0.0.1:8000/projeler', yeniProje.value)
+    bildirimGoster(res.data.mesaj || "Proje başarıyla oluşturuldu! ✅")
     yeniProje.value = { proje_adi: '', musteri: '', son_kullanici: '', lokasyon: '', teklif_konusu: '', teklif_tarihi: '', teklif_referans_no: '', hazirlayan: '' }
-    verileriYukle()
-  } catch (error) { bildirimGoster("Proje oluşturulurken bir hata oluştu.", true) }
+    await verileriYukle()
+  } catch (error) { 
+    bildirimGoster(error.response?.data?.detail || "Proje oluşturulamadı.", true) 
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const malzemeEkle = async () => {
-  if (!yeniMalzeme.value.siparis_kodu || !yeniMalzeme.value.urun_adi || !yeniMalzeme.value.liste_fiyati) {
-    return bildirimGoster("Zorunlu alanları doldurun!", true);
+  if (!yeniMalzeme.value.siparis_kodu || !yeniMalzeme.value.urun_adi) {
+    return bildirimGoster("Zorunlu alanları doldurun!", true)
   }
   try {
-    await axios.post('http://127.0.0.1:8000/malzemeler', yeniMalzeme.value)
-    bildirimGoster("Malzeme depoya eklendi! ✅")
-    yeniMalzeme.value = { siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', tedarikci: '', liste_fiyati: null, para_birimi: 'USD', grup_iskonto_id: 1 }
-    verileriYukle()
-  } catch (error) { bildirimGoster("Malzeme eklenemedi.", true) }
+    const res = await axios.post('http://127.0.0.1:8000/malzemeler', yeniMalzeme.value)
+    bildirimGoster(res.data.mesaj || "Malzeme depoya eklendi! ✅")
+    yeniMalzeme.value = { siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', tedarikci: '', liste_fiyati: null, para_birimi: 'USD' }
+    await verileriYukle()
+  } catch (error) { 
+    bildirimGoster(error.response?.data?.detail || "Malzeme eklenemedi.", true) 
+  }
 }
 
 const panoyaEkle = async () => {
   if (!yeniPanoMalzeme.value.proje_id || !yeniPanoMalzeme.value.malzeme_id) {
-    return bildirimGoster("Lütfen önce Proje ve Malzeme seçin!", true);
+    return bildirimGoster("Lütfen önce Proje ve Malzeme seçin!", true)
   }
   try {
-    await axios.post('http://127.0.0.1:8000/projeler/pano-malzeme-ekle', yeniPanoMalzeme.value);
-    bildirimGoster(`Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`);
-  } catch (error) { bildirimGoster("Ekleme başarısız!", true) }
+    const res = await axios.post('http://127.0.0.1:8000/projeler/pano-malzeme-ekle', yeniPanoMalzeme.value)
+    bildirimGoster(res.data.mesaj || `Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`)
+    yeniPanoMalzeme.value.adet = 1
+  } catch (error) { 
+    bildirimGoster(error.response?.data?.detail || "Malzeme panoya atanamadı!", true) 
+  }
 }
 
 onMounted(verileriYukle)
 </script>
 <style scoped>
-/* 1. GENEL YAPISI VE LOGO */
-body { background-color: #f0f2f5; margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-.container { max-width: 1000px; margin: 20px auto; padding: 20px; color: #2c3e50; }
+/* 1. KÖK DEĞİŞKENLER (Renk ve Font Yönetimi) */
+.container {
+  --bg-body: #f0f2f5;
+  --text-main: #2c3e50;
+  --text-muted: #7f8c8d;
+  --primary-brand: #c0392b; 
+  --maliyet-color: #e74c3c;
+  --proje-color: #f39c12;
+  --satis-color: #27ae60;
+  --font-main: 'Segoe UI', Tahoma, sans-serif;
+}
+
+body { background-color: var(--bg-body); margin: 0; font-family: var(--font-main); color: var(--text-main); }
+.container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+
+/* 2. BAŞLIK ALANI */
 .baslik-alani { text-align: center; margin-bottom: 40px; }
-.logo-yazisi { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: 2px; }
-.kirmizi { color: #c0392b; }
-.baslik-alani h2 { font-size: 18px; color: #7f8c8d; font-weight: 400; margin-top: 5px; }
+.logo-yazisi { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: 2px; color: var(--text-main); }
+.kirmizi { color: var(--primary-brand); }
+.baslik-alani h2 { font-size: 18px; color: var(--text-muted); font-weight: 400; margin-top: 5px; }
 
-/* 2. ÖZET KARTLARI */
-.ozet-kartlari { display: flex; gap: 20px; margin-bottom: 30px; }
-.kart { flex: 1; padding: 20px; border-radius: 10px; color: white; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.kart h4 { margin: 0 0 10px 0; font-size: 16px; opacity: 0.9; }
-.kart p { margin: 0; font-size: 24px; font-weight: bold; }
-.maliyet-karti { background-color: #c0392b; }
-.proje-karti { background-color: #d35400; }
-.satis-karti { background-color: #27ae60; }
+/* 3. ÖZET KARTLARI */
+.ozet-kartlari-wrapper { display: flex; justify-content: flex-end; gap: 20px; margin: 25px 0 30px 0; flex-wrap: wrap; }
+.kart { padding: 15px 20px; border-radius: 8px; color: white; min-width: 150px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+.kart:hover { transform: translateY(-4px); }
+.kart .baslik { font-size: 11px; opacity: 0.9; letter-spacing: 1px; text-transform: uppercase; }
+.kart .deger { font-size: 19px; font-weight: bold; margin-top: 8px; }
 
-/* 3. DİKEY FORM VE KUTULAR */
+.maliyet-karti { background-color: var(--maliyet-color); }
+.proje-karti   { background-color: var(--proje-color); }
+.satis-karti   { background-color: var(--satis-color); }
+
+/* 4. DİKEY FORM VE KUTULAR */
 .dikey-form-alani { display: flex; flex-direction: column; gap: 25px; }
-.form-kutusu { background-color: #ffffff; padding: 30px; border-radius: 10px; border-left: 8px solid #34495e; box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+.form-kutusu { background-color: #ffffff; padding: 30px; border-radius: 10px; border-left: 8px solid var(--primary-brand); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
 .depo-formu { border-left-color: #2980b9; }
-.pano-konfig-formu { border-left-color: #27ae60; }
-
-/* 4. TİPOGRAFİ VE IZGARA (GRID) */
-h3 { color: #2c3e50 !important; font-weight: 700 !important; font-size: 18px; border-bottom: 2px solid #bdc3c7; padding-bottom: 8px; margin-bottom: 20px; }
+.pano-konfig-formu { border-left-color: var(--satis-color); }
+.form-kutusu h3 { color: #2c3e50; font-weight: 700; font-size: 18px; border-bottom: 2px solid #bdc3c7; padding-bottom: 8px; margin-bottom: 20px; }
 .form-grubu { display: flex; flex-direction: column; gap: 15px; }
+
+/* 5. IZGARA VE INPUTLAR */
 .ikili-sutun { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
 .uclu-sutun { display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 15px; width: 100%; }
 .tam-genislik { width: 100%; display: block; box-sizing: border-box; }
 
-/* 5. INPUT VE BUTONLAR */
-input, select { padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; width: 100%; box-sizing: border-box; color: #2c3e50; font-size: 14px; transition: border-color 0.2s; }
-input:focus, select:focus { border-color: #3498db; outline: none; }
-.btn-kaydet { background-color: #34495e; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: background-color 0.2s; }
-.btn-kaydet:hover { background-color: #2c3e50; }
+input, select { padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; width: 100%; box-sizing: border-box; color: var(--text-main); font-size: 14px; transition: border-color 0.3s; }
+input:focus, select:focus { border-color: #3498db; outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
+
+/* 6. BUTONLAR */
+.btn-kaydet { background-color: var(--primary-brand); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.2s; }
+.btn-kaydet:hover { opacity: 0.9; transform: translateY(-1px); }
 .depo-btn { background-color: #2980b9; }
-.depo-btn:hover { background-color: #1c5980; }
-.btn-pano { background-color: #27ae60; margin-top: 10px; }
-.btn-pano:hover { background-color: #1e8449; }
-.btn-hesapla { padding: 10px 20px; background-color: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.btn-pano { background-color: var(--satis-color); margin-top: 10px; }
 
-/* 6. BİLDİRİM KUTULARI */
-.bildirim { margin-top: 25px; padding: 15px 20px; background-color: #e8f8f2; color: #27ae60; border-radius: 6px; font-weight: 600; text-align: center; border: 1px solid #d5f5e3; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.bildirim.hata { background-color: #fdf2f2; color: #c0392b; border: 1px solid #fadbd8; }
+/* 7. BİLDİRİM VE TABLO */
+.bildirim { margin-top: 25px; padding: 15px 20px; background-color: #e8f8f2; color: var(--satis-color); border-radius: 6px; font-weight: 600; text-align: center; border: 1px solid #d5f5e3; }
+.bildirim.hata { background-color: #fdf2f2; color: var(--primary-brand); border: 1px solid #fadbd8; }
 
-/* 7. RAPOR VE EXCEL TABLOSU */
-.rapor-baslik-satiri { display: flex; justify-content: space-between; align-items: center; margin: 30px 0 20px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.rapor-aksiyon { display: flex; gap: 12px; align-items: center; }
-.kucuk-input { width: 100px; padding: 8px; text-align: center; font-weight: bold; border: 1px solid #bdc3c7; border-radius: 4px; }
-.tablo-wrapper { overflow-x: auto; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-.excel-tablosu { width: 100%; border-collapse: collapse; font-size: 13px; background-color: white; border: 1px solid #bdc3c7; }
-.excel-tablosu th { background-color: #f8f9fa; color: #2c3e50; font-weight: 700; text-transform: uppercase; padding: 14px 10px; border: 1px solid #dee2e6; }
-.excel-tablosu td { border: 1px solid #dee2e6; padding: 10px; color: #34495e; }
-.td-maliyet { background-color: #fff5f5; color: #c0392b; text-align: right; font-weight: 500; }
-.excel-tablosu tbody tr:hover { background-color: #f1f4f8; }
-/* --- ÖZET KARTLARI DÜZENİ VE BOŞLUKLARI --- */
-.ozet-kartlari-wrapper {
-  display: flex;
-  justify-content: flex-end; /* Kartları sağ köşeye yaslar (Sola almak istersen 'flex-start' yap) */
-  
-  /* İŞTE BOŞLUK AYARLARI BURADA: */
-  gap: 20px;           /* KARTLARIN BİRBİRİ ARASINDAKİ BOŞLUK */
-  margin-top: 25px;    /* Üstteki diğer elementlerle arasındaki boşluk */
-  margin-bottom: 30px; /* Alttaki diğer elementlerle arasındaki boşluk */
-  
-  flex-wrap: wrap;     /* Ekran küçülünce (mobilde) kartların taşmayıp alt alta inmesini sağlar */
-}
+.tablo-wrapper { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.excel-tablosu { width: 100%; border-collapse: collapse; font-size: 13px; }
+.excel-tablosu th { background-color: #f8f9fa; padding: 14px 10px; border: 1px solid #dee2e6; text-align: left; }
+.excel-tablosu td { border: 1px solid #dee2e6; padding: 10px; color: var(--text-main); }
+.td-maliyet { background-color: #fff5f5; color: var(--primary-brand); text-align: right; font-weight: 600; }
 
-.kart {
-  /* KARTIN KENDİ İÇ BOŞLUĞU (Yukarı/Aşağı 15px, Sağ/Sol 20px) */
-  padding: 15px 20px; 
-  
-  border-radius: 8px;
-  color: white;
-  min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  transition: transform 0.2s; /* Mouse ile üzerine gelince hafifçe büyüme animasyonu */
-}
-
-.kart:hover {
-  transform: translateY(-4px);
-}
-
-.kart .baslik { 
-  font-size: 11px; 
-  opacity: 0.9; 
-  letter-spacing: 1px; 
-}
-
-.kart .deger { 
-  font-size: 19px; 
-  font-weight: bold; 
-  margin-top: 8px; /* Başlık ile rakam arasındaki boşluk */
-}
-
-/* KART RENKLERİ */
-.maliyet-karti { background-color: #e74c3c; } /* Kırmızı */
-.proje-karti { background-color: #f39c12; }   /* Turuncu */
-.satis-karti { background-color: #27ae60; }   /* Yeşil */
-
-/* MOBİL (TELEFON) EKRANI İÇİN BOŞLUK AYARI */
 @media (max-width: 768px) {
-  .ozet-kartlari-wrapper {
-    justify-content: center; /* Mobilde kartları ortala */
-  }
-  .kart {
-    width: 100%; /* Mobilde kartlar ekranı tam kaplasın */
-  }
+  .ozet-kartlari-wrapper { justify-content: center; }
+  .kart { width: 100%; }
 }
 </style>

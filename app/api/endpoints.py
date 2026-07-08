@@ -3,6 +3,7 @@ from app.db.session import get_db_session
 from app.models.schemas import ProjeEkle, IskontoGrubuEkle, MalzemeEkle, ProjePanoEkle
 from app.db import crud  # Senin harika depocu mimarin
 from app.services.tcmb_service import fetch_tcmb_rates
+from app.services.pricing_engine import hesapla_pano_maliyeti
 
 from pydantic import BaseModel
 from fastapi import HTTPException
@@ -149,15 +150,11 @@ def proje_maliyet_raporu_getir(proje_id: int):
     # GÜVENLİK ÖNLEMİ 1: Proje boşsa çökmesin
     if not satirlar:
         return {
-            "proje_adi": "Yeni Proje (Boş)",
-            "genel_toplamlar": {
-                "maliyet_tl": 0,
-                "proje_tl": 0,
-                "satis_tl": 0
-            },
-            "detaylar": []
-        }
-
+           "proje_adi": "Yeni Proje (Boş)",
+           "genel_toplamlar": {"maliyet_tl": 0, "proje_tl": 0, "satis_tl": 0},
+           "detaylar": []
+        } 
+ 
     rapor = []
     toplam_maliyet_tl = 0.0
     toplam_proje_tl = 0.0
@@ -165,64 +162,43 @@ def proje_maliyet_raporu_getir(proje_id: int):
 
     # Çekilen her bir malzeme satırı için 3'LÜ HESAPLAMA
     for satir in satirlar:
-        proje_adi, pano_turu, urun_adi, adet, liste_fiyati, kur_degeri, para_birimi, m_isk, p_isk, s_isk = satir
-        
-        # GÜVENLİK ÖNLEMİ 2: Matematik Çökmesini Engelleme (Boş gelen veriyi 0 kabul ediyoruz)
-        guvenli_liste_fiyati = float(liste_fiyati or 0.0)
-        guvenli_kur_degeri = float(kur_degeri or 1.0)
-        guvenli_adet = float(adet or 0.0)
-        
-        mal_isk_oran = float(m_isk or 0.0)
-        proj_isk_oran = float(p_isk or 0.0)
-        sat_isk_oran = float(s_isk or 0.0)
-        
-        # 1. Ham Fiyatı TL'ye Çevir
-        tl_liste_fiyati = guvenli_liste_fiyati * guvenli_kur_degeri
-        
-        # 2. ÜÇ FARKLI BİRİM FİYAT (İskontoları düşerek)
-        birim_maliyet = tl_liste_fiyati * (1 - mal_isk_oran)
-        birim_proje = tl_liste_fiyati * (1 - proj_isk_oran)
-        birim_satis = tl_liste_fiyati * (1 - sat_isk_oran)
-        
-        # 3. ÜÇ FARKLI TOPLAM TUTAR (Adet ile çarparak)
-        tutar_maliyet = birim_maliyet * guvenli_adet
-        tutar_proje = birim_proje * guvenli_adet
-        tutar_satis = birim_satis * guvenli_adet
-        
-        # 4. Proje Genel Toplamlarına Ekle
-        toplam_maliyet_tl += tutar_maliyet
-        toplam_proje_tl += tutar_proje
-        toplam_satis_tl += tutar_satis
+    # 1. HESAPLAMA MOTORUNU ÇAĞIR
+        maliyet_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['maliyet_iskonto'], satir['kur_degeri'], satir['adet'])
+        proje_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['proje_iskonto'], satir['kur_degeri'], satir['adet'])
+        satis_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['satis_iskonto'], satir['kur_degeri'], satir['adet'])
+    
+    # 2. TOPLAMLARA EKLE
+        toplam_maliyet_tl += maliyet_sonuc['satir_toplami']
+        toplam_proje_tl += proje_sonuc['satir_toplami']
+        toplam_satis_tl += satis_sonuc['satir_toplami']
         
         rapor.append({
-            "pano": pano_turu,
-            "malzeme": urun_adi,
-            "adet": guvenli_adet,
-            
-            # GÖRSELDEKİ YENİ ALANLAR İÇİN EKLENENLER:
-            "liste_fiyati": guvenli_liste_fiyati,
-            
-            "iskonto_orani": proj_isk_oran,  # Proje iskontosunu çekiyoruz
-            "kur_degeri": guvenli_kur_degeri,
-            "para_birimi": para_birimi,
-            
-            "birim_maliyet_tl": round(birim_maliyet, 2),
-            "toplam_maliyet_tl": round(tutar_maliyet, 2),
-            "birim_proje_tl": round(birim_proje, 2),
-            "toplam_proje_tl": round(tutar_proje, 2),
-            "birim_satis_tl": round(birim_satis, 2),
-            "toplam_satis_tl": round(tutar_satis, 2)
-        })
+            "pano": satir['pano_turu'],
+            "malzeme": satir['urun_adi'],
+            "adet": satir['adet'],
+            "liste_fiyati": float(satir['liste_fiyati']),
+            "kur_degeri": float(satir['kur_degeri']),
+            "para_birimi": satir['para_birimi'],
+        
+            "birim_maliyet_tl": maliyet_sonuc['net_fiyat_tl'],
+            "toplam_maliyet_tl": maliyet_sonuc['satir_toplami'],
+        
+            "birim_proje_tl": proje_sonuc['net_fiyat_tl'],
+            "toplam_proje_tl": proje_sonuc['satir_toplami'],
+        
+            "birim_satis_tl": satis_sonuc['net_fiyat_tl'],
+            "toplam_satis_tl": satis_sonuc['satir_toplami']
+    })
 
     return {
-        "proje_adi": satirlar[0][0],
-        "genel_toplamlar": {
-            "maliyet_tl": round(toplam_maliyet_tl, 2),
-            "proje_tl": round(toplam_proje_tl, 2),
-            "satis_tl": round(toplam_satis_tl, 2)
-        },
-        "detaylar": rapor
-    }
+    "proje_adi": satirlar[0]['proje_adi'], # İlk satırdan proje adını alıyoruz
+    "genel_toplamlar": {
+        "maliyet_tl": round(toplam_maliyet_tl, 2),
+        "proje_tl": round(toplam_proje_tl, 2),
+        "satis_tl": round(toplam_satis_tl, 2)
+    },
+    "detaylar": rapor
+}
 # --- MALZEME VE PROJE LİSTELEME (Dinamik seçim için) ---
 @router.get("/malzemeler/listele")
 def malzemeleri_listele():

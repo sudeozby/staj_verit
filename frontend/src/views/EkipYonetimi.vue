@@ -5,10 +5,6 @@
     <UstMenu /> 
 
 
-
-
-
-
       <div style="background: white; padding: 30px; border-radius: 10px; border-left: 8px solid #f39c12; box-shadow: 0 6px 12px rgba(0,0,0,0.08);">
         <h3 style="margin-top: 0; margin-bottom: 25px; color: #2c3e50; font-size: 22px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">Yönetici Paneli: Ekip ve Yetki Kontrolü</h3>
         
