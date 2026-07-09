@@ -93,14 +93,15 @@ onMounted(() => {
 });
 
 // Python (FastAPI) Arka Ucuna Bağlanan Güvenlik Kapısı
+// Python (FastAPI) Arka Ucuna Bağlanan YENİ Güvenlik Kapısı
 const girisKontrol = async () => {
   // Her denemede hata mesajını önce bir gizleyelim
   girisHatasi.value = false;
 
   try {
-
-    // Sabit URL yerine API_BASE yerleştirildi
-     const response = await axios.post(`${API_BASE}/giris-yap`, {
+    // ESKİ: `${API_BASE}/giris-yap`
+    // YENİ VE KESİN ADRES: "http://127.0.0.1:8000/api/login"
+    const response = await axios.post("http://127.0.0.1:8000/api/login", {
       kullanici_adi: kullaniciAdi.value,
       sifre: sifre.value
     });
@@ -116,7 +117,7 @@ const girisKontrol = async () => {
     router.push('/panel');
     
   } catch (error) {
-    // Backend hata fırlatırsa (yanlış şifre) burası çalışır ve ekrana kırmızı yazı çıkar
+    // Backend hata fırlatırsa (yanlış şifre vb.) burası çalışır
     girisHatasi.value = true;
     console.error("Giriş başarısız oldu:", error);
   }
