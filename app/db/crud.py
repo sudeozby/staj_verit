@@ -15,12 +15,6 @@ def get_all_projeler(cur):
         })
     return projeler_listesi
 
-def insert_proje(cur, proje):
-    """Gelen proje verisini veritabanına ekler."""
-    cur.execute("""
-        INSERT INTO projeler (proje_adi, musteri, son_kullanici, lokasyon, teklif_referans_no) 
-        VALUES (%s, %s, %s, %s, %s)
-    """, (proje.proje_adi, proje.musteri, proje.son_kullanici, proje.lokasyon, proje.teklif_referans_no))
 
 def insert_iskonto_grubu(cur, grup):
     """Yeni iskonto grubunu (CPQ Mimarisi) veritabanına ekler."""
@@ -29,13 +23,30 @@ def insert_iskonto_grubu(cur, grup):
         VALUES (%s, %s, %s, %s)
     """, (grup.grup_adi, grup.maliyet_iskonto, grup.proje_iskonto, grup.satis_iskonto))
 
+# crud.py içindeki get_kur_id fonksiyonunu bu şekilde düzelt:
 def get_kur_id(cur, para_birimi):
     """Girilen para biriminin (Örn: USD) kurlar tablosundaki ID'sini bulur."""
     cur.execute("SELECT id FROM kurlar WHERE para_birimi = %s", (para_birimi,))
     sonuc = cur.fetchone()
-    return sonuc[0] if sonuc else None
-
-
+    # RealDictCursor kullandığımız için artık sonuc[0] değil, anahtar ismiyle çağırıyoruz:
+    return sonuc['id'] if sonuc else None
+#Sonradan eklenen sutun adlarıyla eslesmıs duzgun olan proje ekeme fonk
+def insert_proje(cur, proje):
+    """Gelen Pydantic proje verisini yeni veritabanı mimarisine eksiksiz ekler."""
+    cur.execute("""
+        INSERT INTO projeler 
+        (proje_adi, musteri, son_kullanici, lokasyon, teklif_konusu, tarih, referans_no, hazirlayan) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        proje.proje_adi, 
+        proje.musteri, 
+        proje.son_kullanici, 
+        proje.lokasyon, 
+        proje.teklif_konusu, 
+        proje.teklif_tarihi,      # Şemadan gelen isim
+        proje.teklif_referans_no, # Şemadan gelen isim
+        proje.hazirlayan          # Şemadan gelen isim
+    ))
 
 def get_pano_detay_by_id(cur, proje_id, pano_turu):
     """Proje ve pano türüne göre malzeme listesini çeker."""
@@ -63,17 +74,11 @@ def update_pano_malzeme_adet(cur, id, yeni_adet):
 # app/db/crud.py içerisinde olması gereken HALE:
 
 def get_user_by_username(cur, username):
-    """Sadece sorguyu çalıştırır ve sonucu döndürür."""
+    """Sorguyu çalıştırır ve RealDictCursor sayesinde doğrudan sözlük (dict) döndürür."""
     cur.execute("SELECT kullanici_adi, sifre, rol FROM kullanicilar WHERE kullanici_adi = %s;", (username,))
-    user = cur.fetchone()
     
-    if user:
-        # Eğer RealDictCursor kullanıyorsan direkt döner, 
-        # değilse demet (tuple) üzerinden dict oluşturursun:
-        return {"kullanici_adi": user[0], "sifre": user[1], "rol": user[2]}
-    return None
-
-# app/db/crud.py
+    # Ekstra bir dönüşüme gerek yok, veriyi direkt dışarı aktarıyoruz.
+    return cur.fetchone()
 
 def save_log(cur, username, islem, detay):
     """Veritabanına log kaydı atar. Bağlantı dışarıdan yönetilir."""
@@ -129,26 +134,20 @@ def fetch_all_malzemeler(cur):
 
 # app/db/crud.py
 
-# crud.py içerisindeki add_proje'yi şöyle düzelt:
-def add_proje(cur, proje):
-    cur.execute("""
-        INSERT INTO projeler (proje_adi, musteri, son_kullanici, lokasyon, teklif_konusu, teklif_tarihi, teklif_referans_no, teklifi_hazirlayan) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-    """, (
-        proje['proje_adi'], 
-        proje['musteri'], 
-        proje['son_kullanici'], 
-        proje['lokasyon'], 
-        proje['teklif_konusu'], 
-        proje['teklif_tarihi'], 
-        proje['teklif_referans_no'], 
-        proje.get('hazirlayan') # Frontend'de 'hazirlayan' olduğu için bunu kullan
-    ))
+
 
 def add_malzeme(cur, malzeme):
-    """Veritabanına yeni malzeme ekler."""
+    """Pydantic objesinden gelen yeni malzemeyi veritabanına eksiksiz ekler."""
     cur.execute("""
-        INSERT INTO malzemeler (siparis_kodu, urun_adi, marka, urun_grubu, tedarikci, liste_fiyati, para_birimi) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
-    """, (malzeme['siparis_kodu'], malzeme['urun_adi'], malzeme['marka'], malzeme['urun_grubu'], 
-          malzeme['tedarikci'], malzeme['liste_fiyati'], malzeme['para_birimi']))
+        INSERT INTO malzemeler (siparis_kodu, urun_adi, marka, urun_grubu, tedarikci, liste_fiyati, para_birimi, notlar) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+    """, (
+        malzeme.siparis_kodu, 
+        malzeme.urun_adi, 
+        malzeme.marka, 
+        malzeme.urun_grubu, 
+        malzeme.tedarikci, 
+        malzeme.liste_fiyati, 
+        malzeme.para_birimi,
+        malzeme.notlar # Şemadan gelen notlar alanını SQL'e bağladık
+    ))

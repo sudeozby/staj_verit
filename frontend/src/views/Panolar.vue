@@ -9,7 +9,7 @@
         <div class="ikili-sutun" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
           <select v-model="inceleProjeId">
             <option disabled value="">Hangi Projedeki Pano?</option>
-            <option v-for="p in projeler" :key="p[0]" :value="p[0]">{{ p[1] }}</option>
+            <option v-for="p in projeler" :key="p.id" :value="p.id">{{ p.proje_adi }}</option>
           </select>
           
           <select v-model="incelePanoTuru">
@@ -304,8 +304,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
-import { API_BASE } from '../config'; // Merkezî URL import edildi
-
+import { API_BASE } from '../config' // Klasör yapına göre yol farklıysa düzelt
 const router = useRouter();
 onMounted(() => {
   if (!localStorage.getItem('girisYapildi')) {
@@ -332,14 +331,14 @@ const iscilikGideri = ref(0);
 
 // PDF İÇİN ŞABLON BİLGİLERİ
 const yeniProje = ref({
-  musteri: 'TEMKON Müşterisi',
-  son_kullanici: 'End User',
-  lokasyon: 'Ankara / Türkiye',
-  proje_adi: 'Endüstriyel Pano Projesi',
-  teklif_konusu: 'CPQ Pano Konfigürasyonu',
-  hazirlayan: 'Sude Özbay - İletişim Birim Başkanı', 
-  teklif_tarihi: '06.07.2026',
-  teklif_referans_no: 'TEMKON-OFFER-2026'
+  musteri: '',
+  son_kullanici: '',
+  lokasyon: '',
+  proje_adi: '',
+  teklif_konusu: '',
+  hazirlayan: '', 
+  teklif_tarihi: '',
+  teklif_referans_no: ''
 });
 
 // --- HESAPLAMALAR VE FİLTRELER (COMPUTED) ---
@@ -494,7 +493,7 @@ const pdfIndir = () => {
 
 const verileriYukle = async () => {
   try {
-    const response = await axios.get('${API_BASE}/projeler/listele');
+    const response = await axios.get(`${API_BASE}/projeler/listele`);
     projeler.value = response.data;
   } catch (error) { console.error("Projeler yüklenemedi", error); }
 };

@@ -1,41 +1,125 @@
-from fastapi import APIRouter, HTTPException
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+
+from fastapi import APIRouter, Depends, HTTPException, Header
 from app.db.session import get_db_session
 from app.models.schemas import ProjeEkle, IskontoGrubuEkle, MalzemeEkle, ProjePanoEkle
 from app.db import crud  # Senin harika depocu mimarin
 from app.services.tcmb_service import fetch_tcmb_rates
 from app.services.pricing_engine import hesapla_pano_maliyeti
-
-from pydantic import BaseModel
-from fastapi import HTTPException
-
+# Eğer endpoints.py içinden çağırıyorsan:
+from app.models.schemas import IskontoGrubuEkle
+from pydantic import BaseModel, Field
+from app.models.schemas import KullaniciOlustur, KullaniciGiris
+from db_manager import get_db_connection
+import psycopg2
+import psycopg2.extras
 
 router = APIRouter()
 
+from fastapi import APIRouter, HTTPException, Depends
+# ... diğer importların (get_db vb.)
 
+router = APIRouter()
 
-# Vue'dan gelecek giriş verisinin şablonu
-class GirisBilgileri(BaseModel):
-    kullanici_adi: str
-    sifre: str
-
-@router.post("/giris-yap")
-def giris_yap(bilgiler: GirisBilgileri):
-    with get_db_session() as cur:
-        # Veritabanında bu kullanıcı adı ve şifreye sahip biri var mı bakıyoruz
-        cur.execute(
-            "SELECT rol FROM kullanicilar WHERE kullanici_adi = %s AND sifre = %s", 
-            (bilgiler.kullanici_adi, bilgiler.sifre)
-        )
-        sonuc = cur.fetchone()
+# 1. GİRİŞ YAPMA (LOGIN)
+@router.post("/login")
+def login(kullanici: KullaniciGiris):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT * FROM kullanicilar WHERE kullanici_adi = %s AND sifre = %s", (kullanici.kullanici_adi, kullanici.sifre))
+    user = cur.fetchone()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Kullanıcı adı veya şifre hatalı!")
         
-        # Eğer kayıt yoksa (yanlış şifre) hata fırlat
-        if not sonuc:
-            raise HTTPException(status_code=401, detail="Hatalı kullanıcı adı veya şifre!")
-            
-        # Eğer doğruysa kişinin rolünü geri gönder
-        return {"mesaj": "Giriş başarılı", "rol": sonuc[0]}
+    if not user['aktif_mi']:
+        raise HTTPException(status_code=403, detail="Bu hesap pasife alınmıştır. Yöneticinizle iletişime geçin.")
+        
+    return {"mesaj": "Giriş başarılı", "rol": user['rol'], "kullanici_adi": user['kullanici_adi']}
+
+# 2. EKİBİ LİSTELEME (GÜNCELLENDİ)
+@router.get("/ekip")
+def ekip_listele():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cur.execute("SELECT id, kullanici_adi, rol, aktif_mi FROM kullanicilar ORDER BY id ASC")
+        kullanicilar = cur.fetchall()
+        
+        # FastAPI'nin Vue'ya düzgün JSON (isim:değer) gönderebilmesi için dict() kullanıyoruz:
+        return [dict(row) for row in kullanicilar]
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Veriler çekilirken hata oluştu: " + str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+# 3. YENİ ÜYE EKLEME (Kullanıcı Adı Kontrollü)
+@router.post("/ekip/ekle")
+def uye_ekle(yeni_uye: KullaniciOlustur):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cur.execute("SELECT id FROM kullanicilar WHERE kullanici_adi = %s", (yeni_uye.kullanici_adi,))
+        mevcut_kullanici = cur.fetchone()
+        
+        if mevcut_kullanici:
+            raise HTTPException(status_code=400, detail="Bu kullanıcı adı zaten sistemde kayıtlı. Lütfen farklı bir isim seçin.")
+        
+        cur.execute(
+            "INSERT INTO kullanicilar (kullanici_adi, sifre, rol, aktif_mi) VALUES (%s, %s, %s, TRUE)",
+            (yeni_uye.kullanici_adi, yeni_uye.sifre, yeni_uye.rol)
+        )
+        conn.commit()
+        return {"mesaj": "Yeni ekip üyesi başarıyla eklendi!"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Sistem hatası: " + str(e))
+
+# 4. SİLME (SOFT DELETE - PASİFE ALMA)
+@router.delete("/ekip/{uye_id}")
+def uye_pasife_al(uye_id: int):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE kullanicilar SET aktif_mi = FALSE WHERE id = %s", (uye_id,))
+    conn.commit()
+    return {"mesaj": "Kullanıcı başarıyla pasife alındı."}
     
 
+# Şifre güncelleme için güvenlik şeması
+class SifreGuncelle(BaseModel):
+    kullanici_adi: str
+    sifre: str = Field(..., min_length=5)
+
+# Şifre güncelleme kapısı
+@router.put("/ekip/sifre-guncelle")
+def sifre_guncelle_endpoint(veri: SifreGuncelle):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        # Önce kullanıcı veritabanında var mı kontrol et
+        cur.execute("SELECT id FROM kullanicilar WHERE kullanici_adi = %s", (veri.kullanici_adi,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Böyle bir kullanıcı bulunamadı.")
+
+        # Kullanıcı varsa şifresini güncelle
+        cur.execute("UPDATE kullanicilar SET sifre = %s WHERE kullanici_adi = %s", (veri.sifre, veri.kullanici_adi))
+        conn.commit()
+        return {"mesaj": "Şifre başarıyla güncellendi"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Veritabanı hatası: " + str(e))
+    finally:
+        cur.close()
+        conn.close()
+        
     
 # --- PROJELER ---
 @router.get("/projeler")
@@ -58,6 +142,40 @@ def iskonto_grubu_ekle(grup: IskontoGrubuEkle):
         crud.insert_iskonto_grubu(cur, grup)
     return {"mesaj": f"'{grup.grup_adi}' iskonto grubu başarıyla tanımlandı!"}
 
+
+@router.post("/iskonto-gruplari/ekle")
+def iskonto_grubu_ekle(
+    grup: IskontoGrubuEkle, 
+    # Frontend'den gelen 'current-user-role' başlığını yakalaması için alias ekledik
+    current_user_role: str = Header(..., alias="current-user-role")
+):
+    # Yetki kontrolü
+    if current_user_role != 'yonetici':
+        raise HTTPException(status_code=403, detail="Bu işlemi yapmaya yetkiniz yok!")
+        
+    with get_db_session() as cur:
+        cur.execute("""
+            INSERT INTO grup_iskontolar (grup_adi, maliyet_iskonto, proje_iskonto, satis_iskonto, notlar)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            grup.grup_adi, 
+            grup.maliyet_iskonto, 
+            grup.proje_iskonto, 
+            grup.satis_iskonto,
+            grup.notlar # Buradaki 'no' kısmını 'notlar' olarak düzelttik
+        ))
+    return {"mesaj": "Yeni iskonto grubu başarıyla tanımlandı!"}
+
+
+
+@router.get("/iskonto-gruplari")
+def iskonto_gruplari_listele():
+    """Arayüzdeki açılır menü için iskonto gruplarını isimleriyle getirir."""
+    with get_db_session() as cur:
+        # Sadece ID ve İsim lazım, RealDictCursor bize sözlük olarak verecek
+        cur.execute("SELECT id, grup_adi FROM grup_iskontolar ORDER BY id")
+        return cur.fetchall()
+    
 # --- MALZEMELER ---
 @router.post("/malzemeler")
 def yeni_malzeme_ekle(malzeme: MalzemeEkle):
@@ -73,20 +191,26 @@ def yeni_malzeme_ekle(malzeme: MalzemeEkle):
             if not result:
                 raise HTTPException(status_code=400, detail=f"'{malzeme.para_birimi}' kurlar tablosunda bulunamadı.")
             
-            kur_degeri = result[0] # Veritabanından gelen değeri alıyoruz
+            # DÜZELTME 1: RealDictCursor sözlük yapısı kullanıldığı için [0] yerine anahtar isimle çağırdık
+            kur_degeri = result['kur_degeri'] 
         
         # 2. MALZEME EKLEME
         cur.execute("""
-            INSERT INTO malzemeler (siparis_kodu, urun_adi, marka, urun_grubu, tedarikci, liste_fiyati, para_birimi, grup_iskonto_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO malzemeler (siparis_kodu, urun_adi, marka, urun_grubu, tedarikci, liste_fiyati, para_birimi, grup_iskonto_id, notlar)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            malzeme.siparis_kodu, malzeme.urun_adi, malzeme.marka, 
-            malzeme.urun_grubu, malzeme.tedarikci, malzeme.liste_fiyati, 
-            malzeme.para_birimi, malzeme.grup_iskonto_id
+            malzeme.siparis_kodu, 
+            malzeme.urun_adi, 
+            malzeme.marka, 
+            malzeme.urun_grubu, 
+            malzeme.tedarikci, 
+            malzeme.liste_fiyati, 
+            malzeme.para_birimi, 
+            malzeme.grup_iskonto_id, # DÜZELTME: Artık None değil, şablondan gelen ID'yi yazıyoruz
+            malzeme.notlar 
         ))
         
-    return {"mesaj": f"'{malzeme.urun_adi}' envantere başarıyla eklendi!"}
-# --- TCMB CANLI KURLARI (Mükemmel olan kodun hiç değişmedi) ---
+    return {"mesaj": f"'{malzeme.urun_adi}' envantere başarıyla eklendi! ✅"}
 @router.post("/kurlar/tcmb-guncelle")
 def tcmb_kurlarini_guncelle():
     kurlar_verisi = fetch_tcmb_rates()
@@ -108,16 +232,23 @@ def tcmb_kurlarini_guncelle():
 
 # --- PROJE PANO LİSTESİ (TEMKON Güncellemesi) ---
 @router.post("/projeler/pano-malzeme-ekle")
-def projeye_pano_malzemesi_ekle(veri: ProjePanoEkle):
+def projeye_pano_malzemesi_ekle(pano_veri: ProjePanoEkle):
+    """Projeye ait panolardan birine malzeme ataması yapar."""
     with get_db_session() as cur:
-        # Yeni sütunlar eklendi: ozel_iskonto ve notlar
+        # İŞTE GÜNCELLEYECEĞİN SQL BÖLÜMÜ:
         cur.execute("""
             INSERT INTO proje_pano_listesi (proje_id, malzeme_id, pano_turu, adet, ozel_iskonto, notlar)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, (veri.proje_id, veri.malzeme_id, veri.pano_turu, veri.adet, veri.ozel_iskonto, veri.notlar))
+        """, (
+            pano_veri.proje_id, 
+            pano_veri.malzeme_id, 
+            pano_veri.pano_turu, 
+            pano_veri.adet,
+            0,     # DÜZELTME 1: pano_veri.ozel_iskonto yerine 0 yazıyoruz
+            None   # DÜZELTME 2: Eğer pano_veri.notlar varsa patlamasın diye None yazıyoruz
+        ))
         
-    return {"mesaj": f"{veri.proje_id} ID'li projeye, {veri.adet} adet malzeme başarıyla eklendi!"}
-
+    return {"mesaj": f"Başarıyla atandı: {pano_veri.pano_turu} ✅"}
 # --- 3'LÜ FİYAT HESAPLAMA MOTORU (Maliyet / Proje / Satış) ---
 # --- 3'LÜ FİYAT HESAPLAMA MOTORU (Maliyet / Proje / Satış) ---
 @router.get("/projeler/{proje_id}/maliyet-raporu")
