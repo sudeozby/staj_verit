@@ -2,16 +2,9 @@
   <div class="container">
     <UstMenu />
 
-    <div class="ozet-kartlari-wrapper">
-      <div 
-        v-for="kart in ozetKartlari" 
-        :key="kart.baslik" 
-        :class="['kart', kart.sinif]"
-      >
-        <span class="baslik">{{ kart.baslik }}</span>
-        <span class="deger">{{ kart.deger || 0 }} ₺</span>
-      </div>
-    </div>
+ <div style="text-align: right; font-size: 13px; color: #7f8c8d; margin-bottom: 10px; font-weight: 500;">
+  📂 Kayıtlı Proje Sayısı: <span style="color: #2c3e50; font-weight: bold;">{{ projeler.length }}</span>
+</div>
 
     <div class="dikey-form-alani">
       
@@ -22,6 +15,8 @@
             <input v-model="yeniProje.musteri" placeholder="Müşteri" required />
             <input v-model="yeniProje.son_kullanici" placeholder="Son Kullanıcı" />
           </div>
+
+          
           <div class="ikili-sutun">
             <input v-model="yeniProje.lokasyon" placeholder="Lokasyon" />
             <input v-model="yeniProje.proje_adi" placeholder="Proje Adı" required />
@@ -29,10 +24,24 @@
           <input v-model="yeniProje.teklif_konusu" placeholder="Teklif Konusu" class="tam-genislik" />
           <div class="ikili-sutun">
             <input v-model="yeniProje.teklif_tarihi" type="date" />
-            <input v-model="yeniProje.teklif_referans_no" placeholder="Referans No" />
+           <input 
+  v-model="yeniProje.teklif_referans_no" 
+  placeholder="Referans No :Sistem otomatik atayacak..." 
+  disabled 
+  style="background-color: #f1f2f6; cursor: not-allowed; color: #7f8c8d;" 
+/>
           </div>
+          
           <input v-model="yeniProje.hazirlayan" placeholder="Teklifi Hazırlayan" class="tam-genislik" />
           
+          <div style="margin-bottom: 15px;">
+  <label style="font-weight: bold; color: #2c3e50;">📝 Proje Notları</label>
+  <textarea 
+    v-model="yeniProje.notlar" 
+    rows="3" 
+    style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;" 
+    placeholder="Proje ile ilgili ekstra bilgileri buraya girebilirsiniz..."></textarea>
+</div>
           <button @click="projeOlustur" :disabled="isSubmitting" class="btn-kaydet">
             {{ isSubmitting ? 'Kaydediliyor...' : 'Projeyi Oluştur' }}
           </button>
@@ -131,6 +140,16 @@
             <select v-model="yeniPanoMalzeme.pano_turu">
               <option value="ADP 1">ADP 1</option>
               <option value="MCC 1">MCC 1</option>
+              <option value="MCC 2">MCC 2</option>
+              <option value="MCC 3">MCC 3</option>
+              <option value="MCC 4">MCC 4</option>
+              <option value="MCC 5">MCC 5</option>
+              <option value="REM 100">REM 100</option>
+              <option value="REM 200">REM 200</option>
+              <option value="REM 300">REM 300</option>
+              <option value="REM 400">REM 400</option>
+              <option value="REM 500">REM 500</option>
+              <option value="KONTROL S.">KONTROL S.</option>
               <option value="SAHA">SAHA</option>
             </select>
             <input v-model="yeniPanoMalzeme.adet" type="number" placeholder="Adet" />
@@ -208,12 +227,6 @@ const yeniMalzeme = ref({
   grup_iskonto_id: null
 })
 
-// --- ÖZET KARTLARI (Dinamik) ---
-const ozetKartlari = computed(() => [
-  { baslik: 'TOPLAM MALİYET', deger: genelToplamlar.value?.maliyet_tl || 0, sinif: 'maliyet-karti' },
-  { baslik: 'TOPLAM PROJE', deger: genelToplamlar.value?.proje_tl || 0, sinif: 'proje-karti' },
-  { baslik: 'TOPLAM SATIŞ', deger: genelToplamlar.value?.satis_tl || 0, sinif: 'satis-karti' }
-])
 
 // --- FORM VERİLERİ ---
 const yeniProje = ref({ 
@@ -232,11 +245,17 @@ const grupEkle = async () => {
       notlar: yeniGrup.value.notlar || "-"
     };
 
+    // 1. İşlemi yapan kişiyi hafızadan alıyoruz
+    const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
     console.log("Gönderilen Veri:", gonderilecekVeri);
 
-    // 2. İsteği gönder
-    await axios.post(`${API_BASE}/iskonto-gruplari/ekle`, gonderilecekVeri, {
-      headers: { 'current-user-role': 'yonetici' }
+    // 2. İsteği gönder (Adresin sonundaki /ekle kısmını sildik!)
+    await axios.post(`${API_BASE}/iskonto-gruplari`, gonderilecekVeri, {
+      headers: { 
+        'current-user-role': 'yonetici',
+        'islem-yapan': aktifKullanici 
+      }
     });
 
     // 3. Başarılıysa kullanıcıya bildir
@@ -261,6 +280,29 @@ const grupEkle = async () => {
   }
 };
 
+const yeniUyeEkle = async () => {
+  try {
+    // 1. Ekrandaki formu kargoya hazırlıyoruz (Zaten böyledir)
+    const gonderilecekVeri = yeniUye.value; 
+
+    // 2. İŞTE BİZİM KOD BURAYA GELİYOR: Giriş yapan kişiyi al
+    const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    // 3. İsteği, şapkasına islem-yapan etiketini takarak gönderiyoruz
+    const response = await axios.post(`${API_BASE}/ekip/ekle`, gonderilecekVeri, {
+      headers: {
+        'current-user-role': 'yonetici',
+        'islem-yapan': aktifKullanici // FastAPI'nin aradığı etiket!
+      }
+    });
+
+    // 4. Başarılıysa mesaj göster vs.
+    bildirimGoster("Kullanıcı başarıyla eklendi! ✅");
+    
+  } catch (error) {
+    console.error("Eklenirken hata çıktı:", error);
+  }
+};
 
 const yeniPanoMalzeme = ref({ 
   proje_id: '',
@@ -305,7 +347,16 @@ const projeOlustur = async () => {
   if (!yeniProje.value.proje_adi) return bildirimGoster("Lütfen Proje Adı girin!", true)
   isSubmitting.value = true
   try {
-    const res = await axios.post(`${API_BASE}/projeler`, yeniProje.value)
+    // 1. Kimliği hafızadan taze çekiyoruz
+    const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    // 2. Headers kargosunu ekleyerek isteği atıyoruz
+    const res = await axios.post(`${API_BASE}/projeler`, yeniProje.value, {
+      headers: {
+        'islem-yapan': aktifKullanici
+      }
+    });
+
     bildirimGoster(res.data.mesaj || "Proje başarıyla oluşturuldu! ✅")
     yeniProje.value = { proje_adi: '', musteri: '', son_kullanici: '', lokasyon: '', teklif_konusu: '', teklif_tarihi: '', teklif_referans_no: '', hazirlayan: '' }
     await verileriYukle()
@@ -321,10 +372,18 @@ const malzemeEkle = async () => {
     return bildirimGoster("Zorunlu alanları doldurun!", true)
   }
   try {
-    const res = await axios.post(`${API_BASE}/malzemeler`, yeniMalzeme.value)
+    // 1. Kimliği hafızadan taze çekiyoruz
+    const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    // 2. Headers kargosunu ekleyerek isteği atıyoruz
+    const res = await axios.post(`${API_BASE}/malzemeler`, yeniMalzeme.value, {
+      headers: {
+        'islem-yapan': aktifKullanici
+      }
+    });
+
     bildirimGoster(res.data.mesaj || "Malzeme depoya eklendi! ✅")
     
-    // BURASI GÜNCELLENDİ: Form temizlenirken notlar alanı da sıfırlanıyor (8. alan)
     yeniMalzeme.value = { 
       siparis_kodu: '', 
       urun_adi: '', 
@@ -334,8 +393,7 @@ const malzemeEkle = async () => {
       liste_fiyati: null, 
       para_birimi: 'TRY',
       grup_iskonto_id: null,
-      notlar: '' ,
-      grup_iskonto_id: null
+      notlar: '' 
     }
     
     await verileriYukle()
@@ -349,7 +407,16 @@ const panoyaEkle = async () => {
     return bildirimGoster("Lütfen önce Proje ve Malzeme seçin!", true)
   }
   try {
-    const res = await axios.post(`${API_BASE}/projeler/pano-malzeme-ekle`, yeniPanoMalzeme.value)
+    // 1. İşlemi yapan kişiyi tarayıcı hafızasından çekiyoruz
+    const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    // 2. Axios post isteğine 3. parametre olarak headers (islem-yapan) bilgisini ekliyoruz
+    const res = await axios.post(`${API_BASE}/projeler/pano-malzeme-ekle`, yeniPanoMalzeme.value, {
+      headers: {
+        'islem-yapan': aktifKullanici
+      }
+    })
+    
     bildirimGoster(res.data.mesaj || `Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`)
     yeniPanoMalzeme.value.adet = 1;
     yeniPanoMalzeme.value.ozel_iskonto = 0; // <-- Bunu da sıfırla
@@ -382,12 +449,6 @@ body { background-color: var(--bg-body); margin: 0; font-family: var(--font-main
 .kirmizi { color: var(--primary-brand); }
 .baslik-alani h2 { font-size: 18px; color: var(--text-muted); font-weight: 400; margin-top: 5px; }
 
-/* 3. ÖZET KARTLARI */
-.ozet-kartlari-wrapper { display: flex; justify-content: flex-end; gap: 20px; margin: 25px 0 30px 0; flex-wrap: wrap; }
-.kart { padding: 15px 20px; border-radius: 8px; color: white; min-width: 150px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
-.kart:hover { transform: translateY(-4px); }
-.kart .baslik { font-size: 11px; opacity: 0.9; letter-spacing: 1px; text-transform: uppercase; }
-.kart .deger { font-size: 19px; font-weight: bold; margin-top: 8px; }
 
 .maliyet-karti { background-color: var(--maliyet-color); }
 .proje-karti   { background-color: var(--proje-color); }

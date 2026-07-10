@@ -35,17 +35,18 @@ def insert_proje(cur, proje):
     """Gelen Pydantic proje verisini yeni veritabanı mimarisine eksiksiz ekler."""
     cur.execute("""
         INSERT INTO projeler 
-        (proje_adi, musteri, son_kullanici, lokasyon, teklif_konusu, tarih, referans_no, hazirlayan) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (referans_no, proje_adi, musteri, son_kullanici, lokasyon, teklif_konusu, tarih, hazirlayan, notlar) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
+        proje.referans_no,         # Arka planda bizim otomatik ürettiğimiz o kusursuz numara
         proje.proje_adi, 
         proje.musteri, 
         proje.son_kullanici, 
         proje.lokasyon, 
         proje.teklif_konusu, 
-        proje.teklif_tarihi,      # Şemadan gelen isim
-        proje.teklif_referans_no, # Şemadan gelen isim
-        proje.hazirlayan          # Şemadan gelen isim
+        proje.teklif_tarihi,       # Vue'dan gelen tarih
+        proje.hazirlayan,          # Vue'dan gelen hazırlayan kişi
+        proje.notlar               # DBeaver'da yeni açtığımız notlar alanı
     ))
 
 def get_pano_detay_by_id(cur, proje_id, pano_turu):

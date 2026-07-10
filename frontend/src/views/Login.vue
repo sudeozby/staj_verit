@@ -112,6 +112,7 @@ const girisKontrol = async () => {
     // Tarayıcı hafızasına yetkileri kaydediyoruz
     localStorage.setItem('girisYapildi', 'true');
     localStorage.setItem('kullaniciRolu', gelenRol);
+    localStorage.setItem('kullanici_adi', kullaniciAdi.value);
     
     // Panolar sayfasına geçiş yapıyoruz
     router.push('/panel');

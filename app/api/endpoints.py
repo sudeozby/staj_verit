@@ -16,6 +16,7 @@ from app.models.schemas import KullaniciOlustur, KullaniciGiris
 from db_manager import get_db_connection
 import psycopg2
 import psycopg2.extras
+from datetime import datetime
 
 router = APIRouter()
 
@@ -24,148 +25,196 @@ from fastapi import APIRouter, HTTPException, Depends
 
 router = APIRouter()
 
-# 1. GİRİŞ YAPMA (LOGIN)
 @router.post("/login")
 def login(kullanici: KullaniciGiris):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT * FROM kullanicilar WHERE kullanici_adi = %s AND sifre = %s", (kullanici.kullanici_adi, kullanici.sifre))
-    user = cur.fetchone()
-    
-    if not user:
-        raise HTTPException(status_code=401, detail="Kullanıcı adı veya şifre hatalı!")
+    with get_db_session() as cur:
+        # 1. Veritabanından kullanıcıyı sorgula
+        cur.execute("SELECT * FROM kullanicilar WHERE kullanici_adi = %s AND sifre = %s", (kullanici.kullanici_adi, kullanici.sifre))
+        user = cur.fetchone()
         
-    if not user['aktif_mi']:
-        raise HTTPException(status_code=403, detail="Bu hesap pasife alınmıştır. Yöneticinizle iletişime geçin.")
+        # 2. Güvenlik Kontrolleri
+        if not user:
+            raise HTTPException(status_code=401, detail="Kullanıcı adı veya şifre hatalı!")
+            
+        if not user['aktif_mi']:
+            raise HTTPException(status_code=403, detail="Bu hesap pasife alınmıştır. Yöneticinizle iletişime geçin.")
+            
+        # --- 3. SİSTEM LOGU BURADA DEVREYE GİRİYOR ---
+        detay_mesaji = f"{user['kullanici_adi']} adlı kullanıcı ({user['rol']}) sisteme başarılı bir şekilde giriş yaptı."
+        
+        # Log fonksiyonumuzu çağırıyoruz (İşlemi yapan olarak direkt giriş yapan kişinin adını veriyoruz)
+        sistem_log_ekle(cur, user['kullanici_adi'], "GİRİŞ_YAPILDI", detay_mesaji)
+        
+        # 'with' bloğu burada bittiği için, herhangi bir hata yoksa sistem otomatik olarak commit işlemini yapacak ve kapıyı kapatacak!
         
     return {"mesaj": "Giriş başarılı", "rol": user['rol'], "kullanici_adi": user['kullanici_adi']}
 
-# 2. EKİBİ LİSTELEME (GÜNCELLENDİ)
+
+
+# 2. EKİBİ LİSTELEME (Modern Mimari)
 @router.get("/ekip")
 def ekip_listele():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
+    with get_db_session() as cur:
         cur.execute("SELECT id, kullanici_adi, rol, aktif_mi FROM kullanicilar ORDER BY id ASC")
-        kullanicilar = cur.fetchall()
         
-        # FastAPI'nin Vue'ya düzgün JSON (isim:değer) gönderebilmesi için dict() kullanıyoruz:
-        return [dict(row) for row in kullanicilar]
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Veriler çekilirken hata oluştu: " + str(e))
-    finally:
-        cur.close()
-        conn.close()
+        # RealDictCursor bizim yerimize her şeyi Vue'nun sevdiği JSON (sözlük) formatına çevirdiği için
+        # ekstra bir döngü (dict(row)) yazmadan doğrudan dışarı yolluyoruz!
+        return cur.fetchall()
+    
 
-# 3. YENİ ÜYE EKLEME (Kullanıcı Adı Kontrollü)
+from fastapi import Header, HTTPException
+
+# 3. YENİ ÜYE EKLEME (Kullanıcı Adı Kontrollü ve Dinamik Loglamalı)
 @router.post("/ekip/ekle")
-def uye_ekle(yeni_uye: KullaniciOlustur):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
+def uye_ekle(yeni_uye: KullaniciOlustur, islem_yapan: str = Header(default="Bilinmeyen Yönetici")):
+    with get_db_session() as cur:
+        # 1. MÜKEMMEL KONTROLÜN: Bu kullanıcı adı var mı?
         cur.execute("SELECT id FROM kullanicilar WHERE kullanici_adi = %s", (yeni_uye.kullanici_adi,))
         mevcut_kullanici = cur.fetchone()
         
         if mevcut_kullanici:
             raise HTTPException(status_code=400, detail="Bu kullanıcı adı zaten sistemde kayıtlı. Lütfen farklı bir isim seçin.")
         
+        # 2. Yeni üyeyi sisteme ekleme
         cur.execute(
             "INSERT INTO kullanicilar (kullanici_adi, sifre, rol, aktif_mi) VALUES (%s, %s, %s, TRUE)",
             (yeni_uye.kullanici_adi, yeni_uye.sifre, yeni_uye.rol)
         )
-        conn.commit()
-        return {"mesaj": "Yeni ekip üyesi başarıyla eklendi!"}
         
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail="Sistem hatası: " + str(e))
+        # --- 3. SİSTEM LOGU (Artık islem_yapan değişkeniyle dinamik!) ---
+        detay_mesaji = f"Sisteme yeni bir personel eklendi: {yeni_uye.kullanici_adi} (Yetki: {yeni_uye.rol})"
+        sistem_log_ekle(cur, islem_yapan, "PERSONEL_EKLE", detay_mesaji)
 
-# 4. SİLME (SOFT DELETE - PASİFE ALMA)
+        # 'with' bloğu bittiği an her şey (ekleme + log) otomatik commit edilecek!
+        
+    return {"mesaj": f"Yeni ekip üyesi {yeni_uye.kullanici_adi} başarıyla eklendi! ✅"}
+        
+# 4. SİLME (SOFT DELETE - PASİFE ALMA) ve Dinamik Loglama
 @router.delete("/ekip/{uye_id}")
-def uye_pasife_al(uye_id: int):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE kullanicilar SET aktif_mi = FALSE WHERE id = %s", (uye_id,))
-    conn.commit()
-    return {"mesaj": "Kullanıcı başarıyla pasife alındı."}
-    
+def uye_pasife_al(uye_id: int, islem_yapan: str = Header(default="Bilinmeyen Yönetici")):
+    with get_db_session() as cur:
+        # 1. Önce bu id'ye sahip kişi kimmiş onu bulalım ki loga adını yazabilelim
+        cur.execute("SELECT kullanici_adi FROM kullanicilar WHERE id = %s", (uye_id,))
+        silinecek_kullanici = cur.fetchone()
+        
+        if not silinecek_kullanici:
+            raise HTTPException(status_code=404, detail="Sistemde böyle bir kullanıcı bulunamadı.")
+            
+        # RealDictCursor kullandığımız için doğrudan sözlükten çekiyoruz
+        kullanici_adi = silinecek_kullanici['kullanici_adi']
+        
+        # 2. Kullanıcıyı pasife alıyoruz (Soft Delete)
+        cur.execute("UPDATE kullanicilar SET aktif_mi = FALSE WHERE id = %s", (uye_id,))
+        
+        # --- 3. SİSTEM LOGU BURAYA EKLENİYOR (ARTIK DİNAMİK) ---
+        detay_mesaji = f"{kullanici_adi} adlı personelin sisteme erişimi kapatıldı."
+        
+        # Sabit "Yönetici" yazısı yerine Vue'dan gelen 'islem_yapan' değişkenini koyduk!
+        sistem_log_ekle(cur, islem_yapan, "ERİŞİM_KAPATILDI", detay_mesaji)
+        
+        # 'with' bloğu bittiği an her şey (pasife alma + log) otomatik commit edilecek!
+        
+    return {"mesaj": f"{kullanici_adi} adlı kullanıcı başarıyla pasife alındı."}
+
 
 # Şifre güncelleme için güvenlik şeması
 class SifreGuncelle(BaseModel):
     kullanici_adi: str
     sifre: str = Field(..., min_length=5)
 
-# Şifre güncelleme kapısı
+# Şifre güncelleme kapısı (Modern Mimari ve Dinamik Log Destekli)
 @router.put("/ekip/sifre-guncelle")
-def sifre_guncelle_endpoint(veri: SifreGuncelle):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        # Önce kullanıcı veritabanında var mı kontrol et
+def sifre_guncelle_endpoint(veri: SifreGuncelle, islem_yapan: str = Header(default="Bilinmeyen Yönetici")):
+    with get_db_session() as cur:
+        # 1. Önce kullanıcı veritabanında var mı kontrol et
         cur.execute("SELECT id FROM kullanicilar WHERE kullanici_adi = %s", (veri.kullanici_adi,))
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="Böyle bir kullanıcı bulunamadı.")
 
-        # Kullanıcı varsa şifresini güncelle
+        # 2. Kullanıcı varsa şifresini güncelle
         cur.execute("UPDATE kullanicilar SET sifre = %s WHERE kullanici_adi = %s", (veri.sifre, veri.kullanici_adi))
-        conn.commit()
-        return {"mesaj": "Şifre başarıyla güncellendi"}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail="Veritabanı hatası: " + str(e))
-    finally:
-        cur.close()
-        conn.close()
         
+        # --- 3. SİSTEM LOGU BURAYA EKLENİYOR (DİNAMİK) ---
+        detay_mesaji = f"{veri.kullanici_adi} adlı personelin sistem giriş şifresi güncellendi."
+        sistem_log_ekle(cur, islem_yapan, "ŞİFRE_SIFIRLAMA", detay_mesaji)
+        
+        # 'with' bloğu bittiğinde veritabanı mühürlemesi (commit) otomatik gerçekleşir.
+        
+    return {"mesaj": "Şifre başarıyla güncellendi"}
+
+# --- OTOMATİK REFERANS NUMARASI ÜRETİCİ ---
+def referans_no_olustur(cur):
+    """Günün tarihine göre otomatik TEMKON_OFFER numarası üretir."""
+    # Bugünü GGAAYY formatında alıyoruz (Örn: 100726)
+    bugun_str = datetime.now().strftime("%d%m%y") 
+    baslangic_sablonu = f"TEMKON_OFFER_{bugun_str}_"
     
-# --- PROJELER ---
-@router.get("/projeler")
-def projeleri_getir():
-    with get_db_session() as cur:
-        projeler_listesi = crud.get_all_projeler(cur)
-        return {"projeler": projeler_listesi}
+    cur.execute("""
+        SELECT referans_no FROM projeler 
+        WHERE referans_no LIKE %s 
+        ORDER BY id DESC LIMIT 1
+    """, (baslangic_sablonu + '%',))
+    
+    son_kayit = cur.fetchone()
+    
+    if son_kayit and son_kayit['referans_no']:
+        # Örn: 'TEMKON_OFFER_100726_01' -> ['TEMKON', 'OFFER', '100726', '01']
+        parcalar = son_kayit['referans_no'].split('_')
+        son_numara = int(parcalar[3]) 
+        yeni_numara = son_numara + 1
+    else:
+        yeni_numara = 1
+        
+    return f"{baslangic_sablonu}{yeni_numara:02d}"
 
+
+# --- YENİ PROJE EKLEME (Güncel) ---
 @router.post("/projeler")
-def yeni_proje_ekle(proje: ProjeEkle):
+def yeni_proje_ekle(proje: ProjeEkle, islem_yapan: str = Header(default="Bilinmeyen Kullanıcı")):
     with get_db_session() as cur:
+        # 1. Arka planda numarayı otomatik üret
+        yeni_referans = referans_no_olustur(cur)
+        
+        # 2. Üretilen numarayı Vue'dan gelen proje kargosuna tak
+        proje.referans_no = yeni_referans
+        
+        # 3. crud fonksiyonu ile projeyi veritabanına ekle
         crud.insert_proje(cur, proje)
-    return {"mesaj": f"'{proje.proje_adi}' adlı proje başarıyla eklendi!"}
 
-# --- İSKONTO GRUPLARI (TEMKON Mimarisi) ---
+        # --- SİSTEM LOGU ---
+        detay_mesaji = f"Sisteme yeni bir proje eklendi: '{proje.proje_adi}' (Ref: {yeni_referans})"
+        sistem_log_ekle(cur, islem_yapan, "PROJE_EKLE", detay_mesaji)
+
+    return {
+        "mesaj": f"'{proje.proje_adi}' adlı proje başarıyla eklendi! ✅", 
+        "referans_no": yeni_referans
+    }
+
+
+
+# 1. YENİ İSKONTO GRUBU EKLEME (CRUD Mimarisi + Güvenlik + Dinamik Log)
 @router.post("/iskonto-gruplari")
-def iskonto_grubu_ekle(grup: IskontoGrubuEkle):
-    with get_db_session() as cur:
-        # CRUD dosyanı da bu yeni 3'lü iskonto sistemine göre güncellediğini varsayıyoruz
-        crud.insert_iskonto_grubu(cur, grup)
-    return {"mesaj": f"'{grup.grup_adi}' iskonto grubu başarıyla tanımlandı!"}
-
-
-@router.post("/iskonto-gruplari/ekle")
 def iskonto_grubu_ekle(
     grup: IskontoGrubuEkle, 
-    # Frontend'den gelen 'current-user-role' başlığını yakalaması için alias ekledik
-    current_user_role: str = Header(..., alias="current-user-role")
+    # Frontend'den gelen güvenlik ve kimlik başlıklarını alıyoruz
+    current_user_role: str = Header(..., alias="current-user-role"),
+    islem_yapan: str = Header(default="Bilinmeyen Yönetici")
 ):
-    # Yetki kontrolü
+    # Kapıdaki güvenlik kontrolü
     if current_user_role != 'yonetici':
         raise HTTPException(status_code=403, detail="Bu işlemi yapmaya yetkiniz yok!")
         
     with get_db_session() as cur:
-        cur.execute("""
-            INSERT INTO grup_iskontolar (grup_adi, maliyet_iskonto, proje_iskonto, satis_iskonto, notlar)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (
-            grup.grup_adi, 
-            grup.maliyet_iskonto, 
-            grup.proje_iskonto, 
-            grup.satis_iskonto,
-            grup.notlar # Buradaki 'no' kısmını 'notlar' olarak düzelttik
-        ))
-    return {"mesaj": "Yeni iskonto grubu başarıyla tanımlandı!"}
-
+        # Senin kendi temiz mimarin (SQL yazmak yerine crud fonksiyonunu çağırıyoruz)
+        crud.insert_iskonto_grubu(cur, grup)
+        
+        # --- SİSTEM LOGU BURAYA EKLENİYOR (ARTIK DİNAMİK) ---
+        detay_mesaji = f"Sisteme yeni bir iskonto grubu tanımlandı: '{grup.grup_adi}'"
+        
+        # Sabit "Yönetici" yazısı yerine Vue'dan gelen islem_yapan değişkenini koyduk!
+        sistem_log_ekle(cur, islem_yapan, "İSKONTO_GRUBU_EKLE", detay_mesaji)
+        
+    return {"mesaj": f"'{grup.grup_adi}' iskonto grubu başarıyla tanımlandı!"}
 
 
 @router.get("/iskonto-gruplari")
@@ -176,12 +225,14 @@ def iskonto_gruplari_listele():
         cur.execute("SELECT id, grup_adi FROM grup_iskontolar ORDER BY id")
         return cur.fetchall()
     
+from fastapi import Header, HTTPException
+
 # --- MALZEMELER ---
 @router.post("/malzemeler")
-def yeni_malzeme_ekle(malzeme: MalzemeEkle):
-    """Yeni bir malzeme ekler. Para birimini kurlar tablosundan kontrol eder."""
+def yeni_malzeme_ekle(malzeme: MalzemeEkle, islem_yapan: str = Header(default="Bilinmeyen Kullanıcı")):
+    """Yeni bir malzeme ekler. Para birimini kurlar tablosundan kontrol eder ve işlemi loglar."""
     with get_db_session() as cur:
-        # 1. KUR BELİRLEME MANTIĞI
+        # 1. KUR BELİRLEME VE DOĞRULAMA MANTIĞI
         if malzeme.para_birimi == "TRY":
             kur_degeri = 1.0
         else:
@@ -191,7 +242,7 @@ def yeni_malzeme_ekle(malzeme: MalzemeEkle):
             if not result:
                 raise HTTPException(status_code=400, detail=f"'{malzeme.para_birimi}' kurlar tablosunda bulunamadı.")
             
-            # DÜZELTME 1: RealDictCursor sözlük yapısı kullanıldığı için [0] yerine anahtar isimle çağırdık
+            # Kur değerini aldık (Eğer ileride fiyata çarpmak vs. istersen burada hazır bekliyor)
             kur_degeri = result['kur_degeri'] 
         
         # 2. MALZEME EKLEME
@@ -206,11 +257,20 @@ def yeni_malzeme_ekle(malzeme: MalzemeEkle):
             malzeme.tedarikci, 
             malzeme.liste_fiyati, 
             malzeme.para_birimi, 
-            malzeme.grup_iskonto_id, # DÜZELTME: Artık None değil, şablondan gelen ID'yi yazıyoruz
+            malzeme.grup_iskonto_id, 
             malzeme.notlar 
         ))
         
+        # --- 3. SİSTEM LOGU BURAYA EKLENİYOR (ARTIK DİNAMİK!) ---
+        detay_mesaji = f"Envantere yeni malzeme eklendi: {malzeme.urun_adi} (Marka: {malzeme.marka}, Kod: {malzeme.siparis_kodu})"
+        
+        # Sabit "Sistem" yerine Header'dan gelen islem_yapan değişkeni kullanılıyor
+        sistem_log_ekle(cur, islem_yapan, "MALZEME_EKLE", detay_mesaji)
+        
+        # 'with' bloğundan çıktığı an hem malzeme hem de log otomatik olarak commit edilecek.
+
     return {"mesaj": f"'{malzeme.urun_adi}' envantere başarıyla eklendi! ✅"}
+
 @router.post("/kurlar/tcmb-guncelle")
 def tcmb_kurlarini_guncelle():
     kurlar_verisi = fetch_tcmb_rates()
@@ -230,12 +290,27 @@ def tcmb_kurlarini_guncelle():
         "guncellenen_veriler": guncellenen_kurlar
     }
 
-# --- PROJE PANO LİSTESİ (TEMKON Güncellemesi) ---
+
+def sistem_log_ekle(cur, kullanici, islem, detay):
+    try:
+        su_an = datetime.now()
+        
+        # Sütun adlarını DBeaver'daki gibi (kullanici_adi ve islem_turu) yaptık!
+        sql = """
+            INSERT INTO loglar (kullanici_adi, islem_turu, detay, tarih) 
+            VALUES (%s, %s, %s, %s)
+        """
+        cur.execute(sql, (kullanici, islem, detay, su_an))
+        
+    except Exception as e:
+        print("Log kaydedilemedi:", e)
+
+# --- PROJE PANO LİSTESİ (Dinamik Log Destekli) ---
 @router.post("/projeler/pano-malzeme-ekle")
-def projeye_pano_malzemesi_ekle(pano_veri: ProjePanoEkle):
-    """Projeye ait panolardan birine malzeme ataması yapar."""
+def projeye_pano_malzemesi_ekle(pano_veri: ProjePanoEkle, islem_yapan: str = Header(default="Bilinmeyen Kullanıcı")):
+    """Projeye ait panolardan birine malzeme ataması yapar ve işlemi loglar."""
     with get_db_session() as cur:
-        # İŞTE GÜNCELLEYECEĞİN SQL BÖLÜMÜ:
+        # 1. MALZEMEYİ PANOYA EKLE
         cur.execute("""
             INSERT INTO proje_pano_listesi (proje_id, malzeme_id, pano_turu, adet, ozel_iskonto, notlar)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -244,12 +319,21 @@ def projeye_pano_malzemesi_ekle(pano_veri: ProjePanoEkle):
             pano_veri.malzeme_id, 
             pano_veri.pano_turu, 
             pano_veri.adet,
-            0,     # DÜZELTME 1: pano_veri.ozel_iskonto yerine 0 yazıyoruz
-            None   # DÜZELTME 2: Eğer pano_veri.notlar varsa patlamasın diye None yazıyoruz
+            0,     # DÜZELTME 1: Özel iskonto şimdilik 0 olarak sabitlendi
+            None   # DÜZELTME 2: Patlamasın diye None (Boş) gönderiyoruz
         ))
         
+        # --- 2. SİSTEM LOGU (ARTIK DİNAMİK) ---
+        detay_mesaji = f"Projeye malzeme ataması yapıldı (Pano Türü: {pano_veri.pano_turu}, Miktar: {pano_veri.adet} adet)"
+        
+        # Sabit "Sistem" yerine Header'dan gelen islem_yapan değişkenini ekledik!
+        sistem_log_ekle(cur, islem_yapan, "PANO_MALZEME_EKLE", detay_mesaji)
+        
+        # 'with' bloğundan çıktığı an malzeme ataması ve log kaydı aynı anda commit edilecek.
+        
     return {"mesaj": f"Başarıyla atandı: {pano_veri.pano_turu} ✅"}
-# --- 3'LÜ FİYAT HESAPLAMA MOTORU (Maliyet / Proje / Satış) ---
+
+
 # --- 3'LÜ FİYAT HESAPLAMA MOTORU (Maliyet / Proje / Satış) ---
 @router.get("/projeler/{proje_id}/maliyet-raporu")
 def proje_maliyet_raporu_getir(proje_id: int):
@@ -293,12 +377,12 @@ def proje_maliyet_raporu_getir(proje_id: int):
 
     # Çekilen her bir malzeme satırı için 3'LÜ HESAPLAMA
     for satir in satirlar:
-    # 1. HESAPLAMA MOTORUNU ÇAĞIR
+        # 1. HESAPLAMA MOTORUNU ÇAĞIR
         maliyet_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['maliyet_iskonto'], satir['kur_degeri'], satir['adet'])
         proje_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['proje_iskonto'], satir['kur_degeri'], satir['adet'])
         satis_sonuc = hesapla_pano_maliyeti(satir['liste_fiyati'], satir['satis_iskonto'], satir['kur_degeri'], satir['adet'])
     
-    # 2. TOPLAMLARA EKLE
+        # 2. TOPLAMLARA EKLE
         toplam_maliyet_tl += maliyet_sonuc['satir_toplami']
         toplam_proje_tl += proje_sonuc['satir_toplami']
         toplam_satis_tl += satis_sonuc['satir_toplami']
@@ -319,17 +403,17 @@ def proje_maliyet_raporu_getir(proje_id: int):
         
             "birim_satis_tl": satis_sonuc['net_fiyat_tl'],
             "toplam_satis_tl": satis_sonuc['satir_toplami']
-    })
+        })
 
     return {
-    "proje_adi": satirlar[0]['proje_adi'], # İlk satırdan proje adını alıyoruz
-    "genel_toplamlar": {
-        "maliyet_tl": round(toplam_maliyet_tl, 2),
-        "proje_tl": round(toplam_proje_tl, 2),
-        "satis_tl": round(toplam_satis_tl, 2)
-    },
-    "detaylar": rapor
-}
+        "proje_adi": satirlar[0]['proje_adi'], # İlk satırdan proje adını alıyoruz
+        "genel_toplamlar": {
+            "maliyet_tl": round(toplam_maliyet_tl, 2),
+            "proje_tl": round(toplam_proje_tl, 2),
+            "satis_tl": round(toplam_satis_tl, 2)
+        },
+        "detaylar": rapor
+    }
 # --- MALZEME VE PROJE LİSTELEME (Dinamik seçim için) ---
 @router.get("/malzemeler/listele")
 def malzemeleri_listele():
@@ -340,5 +424,28 @@ def malzemeleri_listele():
 @router.get("/projeler/listele")
 def projeleri_listele():
     with get_db_session() as cur:
-        cur.execute("SELECT id, proje_adi FROM projeler")
+        cur.execute("""
+            SELECT id, referans_no, proje_adi, musteri, son_kullanici, 
+                   lokasyon, teklif_konusu, tarih, hazirlayan, notlar 
+            FROM projeler
+        """)
+        rows = cur.fetchall()
+        
+        # Eğer veriler sözlük (dict) yerine düz tuple geliyorsa, 
+        # dinamik olarak sütun isimleriyle eşleştirip nesne haline getiriyoruz:
+        if rows and isinstance(rows[0], tuple):
+            sutun_isimleri = [desc[0] for desc in cur.description]
+            return [dict(zip(sutun_isimleri, row)) for row in rows]
+            
+        return rows
+
+# SİSTEM LOGLARINI LİSTELEME (Modern ve Temiz Versiyon)
+@router.get("/loglar")
+def loglari_getir():
+    with get_db_session() as cur:
+        # Veritabanındaki loglar tablosundan son 100 işlemi en yeniden eskiye sıralayarak çekiyoruz
+        cur.execute("SELECT * FROM loglar ORDER BY id DESC LIMIT 100")
+        
+        # RealDictCursor zaten veriyi Vue için hazır sözlük formatında döndürdüğü için 
+        # ekstra bir çevirme işlemi (dict(row)) yapmadan doğrudan Vue'ya yolluyoruz!
         return cur.fetchall()

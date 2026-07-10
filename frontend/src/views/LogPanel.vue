@@ -17,10 +17,13 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="loglar.length === 0">
+              <td colspan="4" style="text-align: center; padding: 20px; color: #7f8c8d;">Henüz kaydedilmiş bir sistem hareketi yok...</td>
+            </tr>
             <tr v-for="log in loglar" :key="log.id" style="border-bottom: 1px solid #eee;">
               <td style="padding: 15px;">{{ new Date(log.tarih).toLocaleString() }}</td>
               <td style="padding: 15px;">{{ log.kullanici_adi }}</td>
-              <td style="padding: 15px; font-weight: bold;">{{ log.islem_turu }}</td>
+              <td style="padding: 15px; font-weight: bold; color: #2980b9;">{{ log.islem_turu }}</td>
               <td style="padding: 15px;">{{ log.detay }}</td>
             </tr>
           </tbody>
@@ -35,12 +38,9 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
-import { API_BASE } from '../config'; // Merkezî URL import edildi
-
 
 const router = useRouter();
 const loglar = ref([]);
-
 
 onMounted(() => {
   if (!localStorage.getItem('girisYapildi')) {
@@ -50,18 +50,18 @@ onMounted(() => {
   loglariGetir();
 });
 
-
 const loglariGetir = async () => {
   try {
-   const res = await axios.get(`${API_BASE}/loglar`);
-    // Veritabanından gelen veriyi ters çevirerek en son işlemin en üstte görünmesini sağla
-    loglar.value = res.data.reverse(); 
+    // Adres, önceki kapı uyuşmazlığını yaşamamak için doğrudan tam adres olarak yazıldı
+    const res = await axios.get("http://127.0.0.1:8000/api/loglar");
+    
+    // Reverse işlemi kaldırıldı çünkü backend zaten DESC (ters) sıralı gönderiyor
+    loglar.value = res.data; 
   } catch (error) {
     console.error("Loglar yüklenemedi:", error);
     alert("Loglar yüklenirken bir sorun oluştu.");
   }
 };
-
 
 const cikisYap = () => {
   localStorage.removeItem('girisYapildi');

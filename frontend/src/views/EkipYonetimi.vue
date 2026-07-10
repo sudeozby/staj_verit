@@ -92,6 +92,7 @@ import UstMenu from '../components/UstMenu.vue';
 const router = useRouter();
 const kullaniciRolu = ref(localStorage.getItem('kullaniciRolu'));
 
+const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
 // Eğer bu sayfaya yönetici olmayan biri gizlice girmeye çalışırsa onu geri postala
 onMounted(() => {
   if (kullaniciRolu.value !== 'yonetici') {
@@ -114,46 +115,52 @@ const response = await axios.get("http://127.0.0.1:8000/api/ekip"); // <-- /api 
   }
 };
 
-// YENİ VE KULLANICI DOSTU EKLEME FONKSİYONU
+// 1. YENİ PERSONEL EKLEME FONKSİYONU
 const kullaniciEkle = async () => {
-  // 1. ÖNDEN KONTROL (Frontend - Sunucuyu yormadan uyar!)
   if (!yeniKullanici.value.kullanici_adi || !yeniKullanici.value.sifre) {
     return alert("Lütfen kullanıcı adı ve şifre girin!");
   }
 
-  if (yeniKullanici.value.sifre.length < 5) {
-    return alert("Güvenlik Uyarısı: Şifre en az 5 karakter olmalıdır!");
-  }
-
   try {
-    // Kuralları geçtiyse Backend'e gönder
-    await axios.post('http://127.0.0.1:8000/api/ekip/ekle', yeniKullanici.value);
+    // ÇÖZÜM 1: İsmi butona basıldığı saniye taze olarak çekiyoruz!
+    const anlikKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    // ÇÖZÜM 2: Unutulan headers kısmını kargoya ekliyoruz!
+    await axios.post('http://127.0.0.1:8000/api/ekip/ekle', yeniKullanici.value, {
+      headers: {
+        'islem-yapan': anlikKullanici
+      }
+    });
     
-    // Formu temizle ve listeyi yenile
     yeniKullanici.value = { kullanici_adi: '', sifre: '', rol: 'saha_ekibi' };
     await kullanicilariGetir(); 
     alert("Yeni personel başarıyla eklendi!");
-    
   } catch (error) {
-    // 2. BACKEND'DEN GELEN 422 GİBİ HATALARI YAKALAMA
     if (error.response && error.response.status === 422) {
-      alert("Hata: Girdiğiniz bilgiler sistem kurallarıyla uyuşmuyor. Lütfen kontrol edin.");
+      alert("Hata: Girdiğiniz bilgiler sistem kurallarıyla uyuşmuyor.");
     } else {
-      alert(`İşlem başarısız: ${error.response?.data?.detail || 'Sistemde geçici bir sorun var.'}`);
+      alert(`İşlem başarısız: ${error.response?.data?.detail || 'Geçici sorun.'}`);
     }
   }
 };
 
-// 3. SİLME / PASİFE ALMA (Kullanıcı adı yerine ID kullanıyoruz)
+
+// 2. SİLME / PASİFE ALMA FONKSİYONU
 const kullaniciSil = async (id, kullanici_adi) => {
   if (!confirm(`${kullanici_adi} adlı kullanıcının erişimini kapatmak istediğinize emin misiniz?`)) return;
   
   try {
-    // ESKİ: /kullanici-sil/${kullanici_adi} -> YENİ: /ekip/${id}
-    const response = await axios.delete(`http://127.0.0.1:8000/api/ekip/${id}`);
+    // İsmi taze çekiyoruz
+    const anlikKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+    const response = await axios.delete(`http://127.0.0.1:8000/api/ekip/${id}`, {
+      headers: {
+        'islem-yapan': anlikKullanici
+      }
+    });
     
     if (response.status === 200) {
-      alert("Kullanıcının sisteme erişimi kapatıldı (Pasife alındı).");
+      alert("Kullanıcının sisteme erişimi kapatıldı.");
       await kullanicilariGetir(); 
     }
   } catch (error) {
@@ -162,30 +169,34 @@ const kullaniciSil = async (id, kullanici_adi) => {
   }
 };
 
-// 4. ŞİFRE SIFIRLAMA (Aktif Edildi!)
+// 3. ŞİFRE SIFIRLAMA FONKSİYONU
 const sifreSifirla = async (kullanici_adi) => {
-  const yeniSifre = prompt(`${kullanici_adi} adlı kullanıcı için yeni şifreyi giriniz (En az 5 karakter):`);
-  
-  // Kullanıcı "İptal"e basarsa veya boş bırakırsa işlemi durdur
+  const yeniSifre = prompt(`${kullanici_adi} adlı kullanıcı için yeni şifreyi giriniz:`);
   if (!yeniSifre) return; 
 
-  if (yeniSifre.length < 5) {
-    return alert("Güvenlik Uyarısı: Şifre en az 5 karakter olmalıdır!");
-  }
-
   try {
+    // İsmi taze çekiyoruz
+    const anlikKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
     await axios.put('http://127.0.0.1:8000/api/ekip/sifre-guncelle', {
       kullanici_adi: kullanici_adi,
       sifre: yeniSifre
+    }, {
+      headers: {
+        'islem-yapan': anlikKullanici
+      }
     });
-    alert(`🔑 ${kullanici_adi} kullanıcısının şifresi başarıyla güncellendi!`);
+    alert(`🔑 Şifre başarıyla güncellendi!`);
   } catch (error) {
-    alert(`İşlem başarısız: ${error.response?.data?.detail || 'Sunucu hatası'}`);
+    alert(`İşlem başarısız.`);
   }
 };
+
+
 const cikisYap = () => {
   localStorage.removeItem('girisYapildi');
   localStorage.removeItem('kullaniciRolu');
+  localStorage.removeItem('kullanici_adi'); // Çıkış yaparken adı da siliyoruz ki hafızada kalmasın
   router.push('/');
 };
 </script>

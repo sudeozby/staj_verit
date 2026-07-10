@@ -219,80 +219,201 @@
     </div>
 
     <div style="display: none;">
-      <div id="p1-teklif-sablonu" class="pdf-container">
-        <div class="pdf-sayfa kapak-sayfasi">
-          <div class="kapak-icerik">
-            <h1 class="pdf-logo">TEM<span class="kirmizi">K</span>ON</h1>
-            <div class="cizgi"></div>
-            <h2>RESMİ PROJE TEKLİFİ</h2>
-            <p class="alt-baslik">Maliyet ve Teknik Konfigürasyon Belgesi (P1)</p>
-            <div class="kapak-alt-bilgi">
-              <p><strong>Tarih:</strong> {{ yeniProje.teklif_tarihi }}</p>
-              <p><strong>Referans No:</strong> {{ yeniProje.teklif_referans_no }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="sayfa-sonu"></div>
+     
+  <div id="p1-teklif-sablonu" class="pdf-container">
 
-        <div class="pdf-sayfa">
-          <div class="pdf-baslik-alani">
-            <h3>1. GENEL BAKIŞ & PROJE DETAYLARI</h3>
-          </div>
-          <div class="pdf-metin-kutusu">
-            <h4>Hakkımızda</h4>
-            <p>TEMKON, endüstriyel otomasyon ve AG/OG pano sistemlerinde esnek, modüler ve yüksek mühendislik standartlarına uygun çözümler üretmektedir.</p>
-          </div>
-          <div class="pdf-metin-kutusu" style="margin-top: 20px;">
-            <h4>Proje Kimlik Kartı</h4>
-            <table class="pdf-ozet-tablo">
-              <tr><td><strong>Müşteri:</strong></td><td>{{ yeniProje.musteri }}</td></tr>
-              <tr><td><strong>Proje Adı:</strong></td><td>{{ yeniProje.proje_adi }}</td></tr>
-              <tr><td><strong>Hazırlayan:</strong></td><td>{{ yeniProje.hazirlayan }}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div class="sayfa-sonu"></div>
+  <div id="p1-teklif-sablonu" class="pdf-container">
+   <table class="pdf-detay-tablosu">
+     <thead>
+       <tr>
+         <th>NU.</th>
+         <th>MALZEME ADI</th>
+         <th>MARKA</th>          <th>SİPARİŞ NO</th>     <th>ADET</th>
+       </tr>
+     </thead>
+     <tbody>
+       <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index">
+         <td>{{ index + 1 }}</td>
+         <td>{{ item.malzeme }}</td>
+         <td>{{ item.marka || '-' }}</td> <td>{{ item.siparis_no || '-' }}</td>
+         <td>{{ item.adet }}</td>
+       </tr>
+     </tbody>
+   </table>
+</div>
 
-        <div class="pdf-sayfa">
-          <div class="pdf-baslik-alani">
-            <h3>2. TİCARİ VE TEKNİK ŞARTNAME</h3>
-          </div>
-          <div class="sartlar-listesi">
-            <p><strong>1. Geçerlilik Süresi:</strong> İşbu teklif veriliş tarihinden itibaren 30 takvim günü geçerlidir.</p>
-            <p><strong>2. Garanti Şartları:</strong> Tüm pano sistemlerimiz teslim tarihinden itibaren 2 yıl garantilidir.</p>
-          </div>
-          <div class="imza-alani" style="margin-top: 80px; display: flex; justify-content: space-between;">
-            <div class="imza-kutu"><strong>Müşteri Onayı</strong><br><br><br>İmza / Kaşe</div>
-            <div class="imza-kutu"><strong>TEMKON Yetkilisi</strong><br><br><br>İmza / Kaşe</div>
-          </div>
-        </div>
-        <div class="sayfa-sonu"></div>
+    <div class="pdf-sayfa">
+      <div class="kapak-logo-alani">
+        <h1 class="temkon-logo">TEM<span style="color:red">K</span>ON</h1>
+        <div class="kirmizi-cizgi"></div>
+        <p class="kapak-alt-baslik">proje teklif dosyası</p>
+      </div>
 
-        <div class="pdf-sayfa">
-          <div class="pdf-baslik-alani">
-            <h3>3. TEKNİK MALZEME SPESİFİKASYONU (FİYATSIZ LİSTE)</h3>
-          </div>
-          <table class="pdf-malzeme-tablosu">
-            <thead>
-              <tr>
-                <th style="width: 10%">Sıra</th>
-                <th style="width: 25%">Pano Türü</th>
-                <th style="width: 55%">Malzeme Adı</th>
-                <th style="width: 10%">Adet</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index">
-                <td style="text-align: center;">{{ index + 1 }}</td>
-                <td>{{ item.pano }}</td>
-                <td>{{ item.malzeme }}</td>
-                <td style="text-align: center; font-weight: bold;">{{ item.adet }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="kapak-bilgiler">
+       <table class="kapak-tablo">
+  <tr>
+    <td class="baslik">FİRMA / COMPANY</td>
+    <td class="iki-nokta">:</td>
+    <td class="deger">{{ aktifProje.musteri || 'Belirtilmedi' }}</td>
+  </tr>
+  <tr>
+    <td class="baslik">TEKLİF TARİHİ / OFFER DATE</td>
+    <td class="iki-nokta">:</td>
+    <td class="deger">{{ aktifProje.tarih || new Date().toLocaleDateString('tr-TR') }}</td>
+  </tr>
+  <tr>
+    <td class="baslik">İLGİLİ PROJE / RELATED PROJECT</td>
+    <td class="iki-nokta">:</td>
+    <td class="deger">{{ aktifProje.proje_adi || 'Belirtilmedi' }}</td>
+  </tr>
+  <tr>
+    <td class="baslik">REFERANS / REFERENCE ID</td>
+    <td class="iki-nokta">:</td>
+    <td class="deger">{{ aktifProje.referans_no || 'Atanmadı' }}</td>
+  </tr>
+  <tr>
+    <td class="baslik">HAZIRLAYAN / PREPARED BY</td>
+    <td class="iki-nokta">:</td>
+    <td class="deger">{{ aktifProje.hazirlayan || 'Belirtilmedi' }}</td>
+  </tr>
+</table>
+      </div>
+    </div>
+
+    <div class="pdf-sayfa">
+      <div class="sayfa-ust-bilgi">
+        <span class="sol-soluk">temkon hakkında</span>
+        <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+      </div>
+      <div class="kirmizi-cizgi"></div>
+
+      <div class="hakkinda-icerik">
+        <h3 class="hakkinda-baslik">türk endüstriyel elektrik ve makine<br>kontrol ekipmanları teknolojisi</h3>
+        <p class="hakkinda-metin">
+          TEMKON 'Türk Endüstriyel Elektrik ve Makine Kontrol Ekipmanları Teknolojisi' çağın gerektirdiği teknolojik gelişme hızını endüstriyel tesislere uygulamak, üretim süreçlerinde insan faktörünü azaltmak, ürün kalitesindeki homojenliği sağlamak ve bu yüksek teknolojiyi türk sanayisine katma değer kazandıracak biçimde projelendirerek uygulamak üzere bilgi birikimini ve tecrübesini türk ekonomisinin hizmetine sunmaktan gurur duymaktadır.
+        </p>
+        <p class="hakkinda-metin mt-4">
+          TEMKON, müşteri memnuniyetini mühendisliğin temel ilkeleri ile harmanlayıp çevreye ve doğaya saygılı, enerji verimliliği yüksek, teknolojik sürekliliği olan ve endüstrinin can damarındaki projelere, sürekli kendini yenileyen dinamik kadrosu ve her gün yenilenen teknolojisiyle cevap vermeye devam edecektir.
+        </p>
+        
+        <div class="hakkinda-vizyon">
+          <p><strong>yenilikçi</strong> - sürekli düşün, sürekli geliştir</p>
+          <p><strong>teknik</strong> - mühendislik, know how, işgücü</p>
+          <p><strong>projeksiyon</strong> - yüksel, parla, birlikte çalış</p>
         </div>
       </div>
     </div>
+
+    <div class="pdf-sayfa">
+      <div class="sayfa-ust-bilgi">
+        <span class="sol-soluk">proje teklifi</span>
+        <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+      </div>
+      <div class="kirmizi-cizgi"></div>
+
+      <div class="teklif-giris">
+        Fiyat teklifimiz aşağıdaki tablo ve ticari maddelerden ibarettir. Teklifimizin olumlu karşılanacağını umuyoruz. TEMKON olarak <strong>{{ yeniProje.musteri }}</strong> ile çalışmaktan kıvanç duyacağız.
+      </div>
+
+      <h3 class="kirmizi-baslik-ortali">PROJE TEKLİFİ</h3>
+
+      <table class="teklif-tablosu">
+        <thead>
+          <tr>
+            <th>NU.</th>
+            <th>TANIM</th>
+            <th>ADET</th>
+            <th>ADET FİYATI</th>
+            <th>TOPLAM FİYAT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>{{ yeniProje.proje_adi }} - Kontrol Sistemi Panolarının Projelendirilmesi ve İmalatı İçin Gerekli Malzeme Temini</td>
+            <td>1</td>
+            <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+            <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Saha Montajı İçin Gerekli Kablo, Kablo Kanalı, Saha Montaj Malzemesi Temini ve İşçilik</td>
+            <td>1</td>
+            <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+            <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="sag-hizala"><strong>PROJE TOPLAMI (KDV HARİÇ):</strong></td>
+            <td><strong>{{ ((dinamikAraToplam || 0) + (iscilikGideri || 0)).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="pdf-sayfa">
+      <div class="sayfa-ust-bilgi">
+        <span class="sol-soluk">ticari şartlar</span>
+        <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+      </div>
+      <div class="kirmizi-cizgi"></div>
+
+      <h3 class="siyah-baslik-ortali">TİCARİ ve TEKNİK ŞARTLAR</h3>
+
+      <ol class="sartlar-listesi">
+        <li>Teklif edilen fiyatlara KDV dahil değildir.</li>
+        <li>Döviz verilen tekliflerde fatura kesim tarihindeki TCMB efektif satış kuru esas alınacaktır.</li>
+        <li>Teklifimiz sahadaki panolara malzeme temini ve montajından ibarettir.</li>
+        <li>Teklifin geçerlilik süresi 15 gündür.</li>
+        <li>Ödeme şekli: %40 Sipariş ile birlikte avans, kalan tutar pano tesliminde nakit/havale şeklindedir.</li>
+      </ol>
+
+      <div class="imza-alani">
+        <p class="imza-sirket-adi"><strong>TEMKON Endüstriyel Elektrik Yazılım Bilgisayar ve Elektronik Sistemler İnş. San. Tic. Ltd. Şti.</strong></p>
+        <div class="kase-kutusu">
+          <p class="soluk-yazi">Kaşe ve İmza</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pdf-sayfa" v-if="filtrelenmisPanoIcerigi && filtrelenmisPanoIcerigi.length > 0">
+      <div class="sayfa-ust-bilgi">
+        <span class="sol-soluk">detay bilgiler</span>
+        <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+      </div>
+      <div class="kirmizi-cizgi"></div>
+
+      <h3 class="siyah-baslik-ortali">PROJE DETAYLARI</h3>
+
+      <div class="detay-tablo-kapsayici">
+        <div class="mavi-baslik">PANOLAR DETAYLI MALZEME LİSTESİ</div>
+        <table class="detay-tablosu">
+          <thead>
+            <tr>
+              <th style="width: 10%">NU.</th>
+              <th style="width: 45%">MALZEME ADI</th>
+              <th style="width: 15%">MARKA</th>
+              <th style="width: 20%">SİPARİŞ NUMARASI</th>
+              <th style="width: 10%">ADET</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index">
+              <td style="text-align: center;">{{ index + 1 }}</td>
+              <td>{{ item.malzeme }}</td>
+              <td>{{ item.marka || '-' }}</td>
+              <td>{{ item.siparis_kodu || '-' }}</td>
+              <td style="text-align: center; font-weight: bold;">{{ item.adet }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </div>
+
+  </div>
+</div>
 
   </div>
 </template>
@@ -339,6 +460,20 @@ const yeniProje = ref({
   hazirlayan: '', 
   teklif_tarihi: '',
   teklif_referans_no: ''
+})
+
+
+const aktifProje = computed(() => {
+  if (!projeler.value || !inceleProjeId.value) return {};
+  
+  // Vue'nun Proxy kutusunu kırıp saf listeyi alıyoruz
+  const safListe = JSON.parse(JSON.stringify(projeler.value));
+  const arananId = String(inceleProjeId.value).trim(); // Boşlukları bile siler
+  
+  // Hem id hem proje_id alanlarını tarar
+  const bulunan = safListe.find(x => String(x.id).trim() === arananId || String(x.proje_id).trim() === arananId);
+  
+  return bulunan || {};
 });
 
 // --- HESAPLAMALAR VE FİLTRELER (COMPUTED) ---
@@ -480,14 +615,32 @@ const pdfIndir = () => {
   if (kullaniciRolu.value === 'saha_ekibi') return;
   const element = document.getElementById('p1-teklif-sablonu');
   if (!element) return alert("Şablon bulunamadı.");
+
+  const p = aktifProje.value; 
+
+  // --- YENİ NESİL HATA AVCISI ---
+  if (!p || Object.keys(p).length === 0) {
+    const safListe = JSON.parse(JSON.stringify(projeler.value));
+    alert("DİKKAT: Proje yine bulunamadı! F12 Konsoluna bak.");
+    console.error("ARANAN ID:", inceleProjeId.value);
+    console.error("ELİMİZDEKİ VERİLER (AÇIK HALİ):\n" + JSON.stringify(safListe, null, 2));
+    return; // Hata varsa PDF basmasın
+  }
+
+  // Dosya adını güvenli oluşturma
+  const musteriAdi = p.musteri ? String(p.musteri).replace(/\s+/g, '_') : 'Musteri';
+  const refNo = p.referans_no ? String(p.referans_no) : 'Teklif_Dosyasi';
+  const dinamikDosyaAdi = `${musteriAdi}_${refNo}.pdf`;
+
   const secenekler = {
     margin: 0,
-    filename: `${yeniProje.value.proje_adi}_Teklif_Formu.pdf`,
+    filename: dinamikDosyaAdi,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
+  
   html2pdf().set(secenekler).from(element).save();
 };
 
@@ -513,27 +666,75 @@ onMounted(verileriYukle);
 .kirmizi { color: #c0392b; }
 input, select { padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
 h3 { color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 8px; margin-bottom: 20px; }
-/* ================= P1 PDF ŞABLON STİLLERİ ================= */
-.pdf-container { background: #ffffff; font-family: 'Helvetica Neue', Arial, sans-serif; color: #2c3e50; width: 210mm; margin: 0 auto; }
-.pdf-sayfa { padding: 20mm 15mm; height: 297mm; box-sizing: border-box; position: relative; background: white; }
-.sayfa-sonu { page-break-after: always; clear: both; }
-.kapak-sayfasi { background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%); color: white; display: flex; align-items: center; justify-content: center; text-align: center; }
-.kapak-icerik { margin-top: 60mm; }
-.pdf-logo { font-size: 55px; font-weight: 900; letter-spacing: 4px; margin: 0; }
-.kapak-icerik h2 { font-size: 26px; letter-spacing: 2px; margin-top: 20px; }
-.alt-baslik { font-size: 14px; opacity: 0.7; }
-.cizgi { width: 80mm; height: 4px; background-color: #c0392b; margin: 15px auto; }
-.kapak-alt-bilgi { position: absolute; bottom: 25mm; left: 0; right: 0; font-size: 13px; opacity: 0.6; }
-.pdf-baslik-alani { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; margin-bottom: 25px; }
-.pdf-baslik-alani h3 { margin: 0; font-size: 18px; color: #2c3e50; }
-.pdf-metin-kutusu { background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 5px solid #c0392b; }
-.pdf-metin-kutusu h4 { margin: 0 0 10px 0; color: #1a252f; }
-.pdf-ozet-tablo { width: 100%; border-collapse: collapse; font-size: 13px; }
-.pdf-ozet-tablo td { padding: 8px 5px; border-bottom: 1px solid #edf2f7; }
-.sartlar-listesi p { font-size: 13px; line-height: 1.8; margin-bottom: 12px; }
-.imza-kutu { border: 1px dashed #bdc3c7; padding: 15px; width: 45%; text-align: center; font-size: 12px; border-radius: 6px; }
-.pdf-malzeme-tablosu { width: 100%; border-collapse: collapse; font-size: 11px; }
-.pdf-malzeme-tablosu th { background-color: #2c3e50; color: white; padding: 10px; text-align: left; border: 1px solid #34495e; }
-.pdf-malzeme-tablosu td { padding: 8px; border: 1px solid #e2e8f0; }
-.pdf-malzeme-tablosu tbody tr:nth-child(even) { background-color: #f8fafc; }
+
+
+
+
+/* PDF GENEL AYARLARI */
+.pdf-container {
+  width: 210mm; /* A4 Genişliği */
+  background: white;
+  color: black;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+}
+
+/* SAYFA BÖLME MANTIĞI */
+.pdf-sayfa {
+  padding: 15mm;
+  page-break-after: always;
+  min-height: 260mm; 
+  position: relative;
+}
+.pdf-sayfa:last-child {
+  page-break-after: auto;
+}
+
+
+
+/* LOGO VE ÜST ÇİZGİLER */
+.temkon-logo { font-size: 28px; font-weight: 900; margin: 0; text-align: right; }
+.temkon-logo-kucuk { font-size: 20px; font-weight: 900; margin: 0; text-align: right; }
+.kirmizi-cizgi { border-bottom: 3px solid #e30613; margin-top: 5px; margin-bottom: 20px; }
+.sayfa-ust-bilgi { display: flex; justify-content: space-between; align-items: flex-end; }
+.sol-soluk { color: #95a5a6; font-style: italic; font-size: 11px; }
+
+/* 1. SAYFA - KAPAK TASARIMI */
+.kapak-logo-alani { margin-top: 150px; }
+.kapak-alt-baslik { color: #7f8c8d; font-size: 14px; text-align: right; margin-top: -15px; }
+.kapak-bilgiler { margin-top: 100px; }
+.kapak-tablo { width: 100%; border-collapse: collapse; }
+.kapak-tablo td { padding: 8px; border: 1px solid #bdc3c7; }
+.kapak-tablo .baslik { width: 40%; color: #7f8c8d; font-size: 12px; }
+.kapak-tablo .iki-nokta { width: 2%; text-align: center; border-left: none; border-right: none; }
+.kapak-tablo .deger { font-weight: bold; }
+
+/* 2. SAYFA - HAKKINDA */
+.hakkinda-icerik { padding: 40px; text-align: center; }
+.hakkinda-baslik { font-size: 18px; color: #555; margin-bottom: 30px; }
+.hakkinda-metin { color: #7f8c8d; line-height: 1.6; text-align: justify; }
+.mt-4 { margin-top: 20px; }
+.hakkinda-vizyon { margin-top: 50px; font-size: 12px; color: #333; text-align: center; }
+
+/* 3. SAYFA - TEKLİF TABLOSU */
+.teklif-giris { border: 1px solid #ccc; padding: 15px; text-align: center; margin-bottom: 30px; font-weight: bold; }
+.kirmizi-baslik-ortali { color: #e30613; text-align: center; margin-bottom: 10px; }
+.teklif-tablosu { width: 100%; border-collapse: collapse; border: 2px solid black; }
+.teklif-tablosu th { background-color: white; border: 2px solid black; border-bottom: 3px solid black; padding: 10px; font-size: 11px; }
+.teklif-tablosu td { border: 1px solid black; padding: 10px; vertical-align: top; }
+.sag-hizala { text-align: right; }
+
+/* 4. SAYFA - ŞARTLAR VE İMZA */
+.siyah-baslik-ortali { text-align: center; border-top: 2px solid black; border-bottom: 2px solid black; padding: 5px 0; margin-bottom: 20px; }
+.sartlar-listesi { line-height: 1.8; margin-bottom: 50px; }
+.imza-alani { margin-top: 80px; text-align: center; }
+.imza-sirket-adi { font-size: 14px; margin-bottom: 20px; }
+.kase-kutusu { border: 1px dashed #ccc; width: 300px; height: 150px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.soluk-yazi { color: #bdc3c7; font-style: italic; }
+
+/* 5. SAYFA - DETAY TABLOSU */
+.mavi-baslik { background-color: #a9cce3; padding: 8px; text-align: center; font-weight: bold; border: 2px solid #2c3e50; border-bottom: none; }
+.detay-tablosu { width: 100%; border-collapse: collapse; border: 2px solid #2c3e50; }
+.detay-tablosu th { background-color: #2c3e50; color: white; padding: 8px; font-size: 10px; border: 1px solid #2c3e50; }
+.detay-tablosu td { border: 1px solid #2c3e50; padding: 6px; font-size: 11px; }
 </style>

@@ -12,6 +12,8 @@ class ProjeEkle(BaseModel):
     teklif_tarihi: Optional[date] = None
     teklif_referans_no: Optional[str] = None
     hazirlayan: Optional[str] = None
+    notlar: Optional[str] = None # Boş bırakılabilir
+    referans_no: Optional[str] = None
 
 # 2. MALZEME ŞABLONU
 class MalzemeEkle(BaseModel):
