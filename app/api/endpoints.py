@@ -344,25 +344,38 @@ def proje_maliyet_raporu_getir(proje_id: int):
                 p.proje_adi,
                 pl.pano_turu,
                 m.urun_adi,
-                pl.adet,
+                SUM(pl.adet) as adet,   -- 1. DEĞİŞİKLİK: Aynı malzemelerin adetlerini topluyoruz!
                 m.liste_fiyati,
                 COALESCE(k.kur_degeri, 1.0) as kur_degeri,
                 m.para_birimi,
                 g.maliyet_iskonto,
                 g.proje_iskonto,
-                g.satis_iskonto
+                g.satis_iskonto,
+                m.marka,
+                m.siparis_kodu
             FROM proje_pano_listesi pl
             JOIN projeler p ON pl.proje_id = p.id
             JOIN malzemeler m ON pl.malzeme_id = m.id
             LEFT JOIN kurlar k ON m.para_birimi = k.para_birimi
             LEFT JOIN grup_iskontolar g ON m.grup_iskonto_id = g.id
             WHERE p.id = %s
+            GROUP BY 
+                -- 2. DEĞİŞİKLİK: SUM() haricindeki TÜM sütunları buraya yazmak zorundayız:
+                p.proje_adi,
+                pl.pano_turu,
+                m.urun_adi,
+                m.liste_fiyati,
+                k.kur_degeri,
+                m.para_birimi,
+                g.maliyet_iskonto,
+                g.proje_iskonto,
+                g.satis_iskonto,
+                m.marka,
+                m.siparis_kodu
         """, (proje_id,))
         
-        # Kapı kapanmadan veriyi alıyoruz
         satirlar = cur.fetchall()
 
-    # GÜVENLİK ÖNLEMİ 1: Proje boşsa çökmesin
     if not satirlar:
         return {
            "proje_adi": "Yeni Proje (Boş)",
@@ -394,7 +407,11 @@ def proje_maliyet_raporu_getir(proje_id: int):
             "liste_fiyati": float(satir['liste_fiyati']),
             "kur_degeri": float(satir['kur_degeri']),
             "para_birimi": satir['para_birimi'],
-        
+            
+
+            "marka": satir['marka'] if satir['marka'] else "-",          # YENİ EKLENDİ
+            "siparis_kodu": satir['siparis_kodu'] if satir['siparis_kodu'] else "-", # YENİ EKLENDİ
+
             "birim_maliyet_tl": maliyet_sonuc['net_fiyat_tl'],
             "toplam_maliyet_tl": maliyet_sonuc['satir_toplami'],
         
@@ -414,12 +431,22 @@ def proje_maliyet_raporu_getir(proje_id: int):
         },
         "detaylar": rapor
     }
-# --- MALZEME VE PROJE LİSTELEME (Dinamik seçim için) ---
 @router.get("/malzemeler/listele")
 def malzemeleri_listele():
     with get_db_session() as cur:
-        cur.execute("SELECT id, urun_adi, siparis_kodu FROM malzemeler")
-        return cur.fetchall()
+        # 1. Sorguya 'marka' sütununu ekledik ve 'urun_adi' alanını Vue'daki gibi 'malzeme' olarak isimlendirdik
+        cur.execute("""
+            SELECT id, urun_adi AS malzeme, marka, siparis_kodu 
+            FROM malzemeler
+        """)
+        rows = cur.fetchall()
+        
+        # 2. Verileri sözlüğe (dict) çeviriyoruz ki Vue kodun item.marka ve item.siparis_kodu diye okuyabilsin:
+        if rows and isinstance(rows[0], tuple):
+            sutun_isimleri = [desc[0] for desc in cur.description]
+            return [dict(zip(sutun_isimleri, row)) for row in rows]
+            
+        return rows
 
 @router.get("/projeler/listele")
 def projeleri_listele():
