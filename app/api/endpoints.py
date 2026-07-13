@@ -341,10 +341,12 @@ def proje_maliyet_raporu_getir(proje_id: int):
     with get_db_session() as cur:
         cur.execute("""
             SELECT 
+                pl.degistirildi,    
+                pl.id,
                 p.proje_adi,
                 pl.pano_turu,
                 m.urun_adi,
-                SUM(pl.adet) as adet,   -- 1. DEĞİŞİKLİK: Aynı malzemelerin adetlerini topluyoruz!
+                SUM(pl.adet) as adet,  
                 m.liste_fiyati,
                 COALESCE(k.kur_degeri, 1.0) as kur_degeri,
                 m.para_birimi,
@@ -360,7 +362,9 @@ def proje_maliyet_raporu_getir(proje_id: int):
             LEFT JOIN grup_iskontolar g ON m.grup_iskonto_id = g.id
             WHERE p.id = %s
             GROUP BY 
-                -- 2. DEĞİŞİKLİK: SUM() haricindeki TÜM sütunları buraya yazmak zorundayız:
+               
+                pl.id,
+                pl.degistirildi,
                 p.proje_adi,
                 pl.pano_turu,
                 m.urun_adi,
@@ -401,6 +405,9 @@ def proje_maliyet_raporu_getir(proje_id: int):
         toplam_satis_tl += satis_sonuc['satir_toplami']
         
         rapor.append({
+
+            "id": satir['id'],
+            "degistirildi": satir['degistirildi'],
             "pano": satir['pano_turu'],
             "malzeme": satir['urun_adi'],
             "adet": satir['adet'],
@@ -465,6 +472,51 @@ def projeleri_listele():
             return [dict(zip(sutun_isimleri, row)) for row in rows]
             
         return rows
+
+
+@router.put("/pano-malzeme-guncelle/{malzeme_id}")
+def pano_malzeme_guncelle(malzeme_id: int, yeni_veri: dict):
+    guncellenecekler = {k: v for k, v in yeni_veri.items() if k not in ["id"]}
+    if not guncellenecekler:
+        return {"mesaj": "Güncellenecek veri bulunamadı."}
+
+    with get_db_session() as cur:
+        # 1. Önce satırın "eski" halini çekiyoruz
+        sutun_isimleri = ", ".join(guncellenecekler.keys())
+        eski_sorgu = f"SELECT {sutun_isimleri} FROM proje_pano_listesi WHERE id = %s"
+        cur.execute(eski_sorgu, (malzeme_id,))
+        eski_degerler = cur.fetchone()
+
+        # 2. Asıl tabloyu güncelliyoruz ve degistirildi sütununu TRUE yapıyoruz (Kalıcı Sarı Renk)
+        sutunlar = []
+        degerler = []
+        for anahtar, deger in guncellenecekler.items():
+            sutunlar.append(f"{anahtar} = %s")
+            degerler.append(deger)
+            
+        sutunlar.append("degistirildi = TRUE") 
+        
+        sorgu = f"UPDATE proje_pano_listesi SET {', '.join(sutunlar)} WHERE id = %s"
+        degerler.append(malzeme_id)
+        cur.execute(sorgu, tuple(degerler))
+
+        # 3. SENİN MEVCUT LOG TABLONA YAZIYORUZ
+        if eski_degerler:
+            for i, (anahtar, yeni_deger) in enumerate(guncellenecekler.items()):
+                eski_deger = eski_degerler[anahtar] if isinstance(eski_degerler, dict) else eski_degerler[i]
+                
+                if str(eski_deger) != str(yeni_deger):  # Değer değişmişse logla
+                    detay_metni = f"Malzeme ID {malzeme_id} satırında '{anahtar}' değeri '{eski_deger}' iken '{yeni_deger}' olarak değiştirildi."
+                    
+                    log_sorgu = """
+                        INSERT INTO loglar (kullanici_adi, islem_turu, detay) 
+                        VALUES (%s, %s, %s)
+                    """
+                    # Not: "Yönetici" kısmını eğer frontend'den kullanıcı adını alıyorsan dinamik yapabilirsin
+                    cur.execute(log_sorgu, ("Yönetici", "HÜCRE_GÜNCELLEME", detay_metni))
+
+    return {"mesaj": "Başarıyla güncellendi ve loglandı!"}
+
 
 # SİSTEM LOGLARINI LİSTELEME (Modern ve Temiz Versiyon)
 @router.get("/loglar")

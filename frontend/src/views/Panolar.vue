@@ -68,15 +68,173 @@
           </thead>
           <tbody>
             <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="text-align: center; border-bottom: 1px solid #ccc;">
-              <td style="border: 1px solid #000; padding: 8px;">{{ item.pano }}</td>
-              <td style="border: 1px solid #000; padding: 8px; text-align: left;">{{ item.malzeme }}</td>
-              <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.liste_fiyati }} {{ item.para_birimi }}</td>
-              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699; font-weight: bold;">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</td>
-              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">{{ item.birim_proje_tl }} ₺</td>
-              <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">{{ item.adet }}</td>
-              <td style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold;">{{ item.toplam_proje_tl }} ₺</td>
-              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699;">{{ item.kur_degeri }} ({{ item.para_birimi }})</td>
-              <td style="border: 1px solid #000; padding: 8px; background-color: #ffe699;">-</td>
+              <!-- 1. PANO TÜRÜ -->
+<td 
+  style="border: 1px solid #000; padding: 8px; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'pano')"
+  title="Panoyu değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-pano'">{{ item.pano }}</span>
+  <input 
+    v-else 
+    v-model="item.pano" 
+    type="text" 
+    @blur="kaydetVeKapat(item, index, 'pano')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'pano')"
+    class="hucre-input" style="width: 100%; text-align: center;" autofocus
+  >
+</td>
+
+<!-- 2. MALZEME ADI -->
+<td 
+  style="border: 1px solid #000; padding: 8px; text-align: left; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'malzeme')"
+  title="Malzeme adını değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-malzeme'">{{ item.malzeme }}</span>
+  <input 
+    v-else 
+    v-model="item.malzeme" 
+    type="text" 
+    @blur="kaydetVeKapat(item, index, 'malzeme')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'malzeme')"
+    class="hucre-input" style="width: 100%; text-align: left;" autofocus
+  >
+</td>
+
+<!-- 3. LİSTE FİYATI -->
+<td 
+  style="border: 1px solid #000; padding: 8px; font-weight: bold; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'liste_fiyati')"
+  title="Fiyatı değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-liste_fiyati'">{{ item.liste_fiyati }} {{ item.para_birimi }}</span>
+  <input 
+    v-else 
+    v-model="item.liste_fiyati" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'liste_fiyati')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'liste_fiyati')"
+    class="hucre-input" autofocus
+  >
+</td>
+
+<!-- 4. İSKONTO ORANI -->
+<td 
+  style="border: 1px solid #000; padding: 8px; background-color: #ffe699; font-weight: bold; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'iskonto_orani')"
+  title="İskontoyu değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-iskonto_orani'">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</span>
+  <input 
+    v-else 
+    v-model="item.iskonto_orani" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'iskonto_orani')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'iskonto_orani')"
+    class="hucre-input" autofocus
+  >
+</td>
+
+<!-- 5. NET FİYAT (BİRİM PROJE TL) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'birim_proje_tl')"
+  title="Net fiyatı değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-birim_proje_tl'">{{ item.birim_proje_tl }} ₺</span>
+  <input 
+    v-else 
+    v-model="item.birim_proje_tl" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'birim_proje_tl')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'birim_proje_tl')"
+    class="hucre-input" autofocus
+  >
+</td>
+<td 
+  style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda; cursor: pointer;" 
+  @dblclick="duzenlemeyiAc(index, 'adet')"
+  title="Adedi değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <!-- Düzenleme modunda DEĞİLSE normal yazıyı göster -->
+  <span v-if="duzenlenenHucre !== index + '-adet'">
+    {{ item.adet }}
+  </span>
+  
+  <!-- Çift tıklandıysa bu input kutusunu göster -->
+  <input 
+    v-else 
+    v-model="item.adet" 
+    type="number" 
+    @blur="kaydetVeKapat(item, index)" 
+    @keyup.enter="kaydetVeKapat(item, index)"
+    class="hucre-input"
+    autofocus
+  >
+</td>             <!-- 6. TOPLAM FİYAT (PROJE TL) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; color: #c00000; font-weight: bold; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'toplam_proje_tl')"
+  title="Toplam fiyatı değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-toplam_proje_tl'">{{ item.toplam_proje_tl }} ₺</span>
+  <input 
+    v-else 
+    v-model="item.toplam_proje_tl" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'toplam_proje_tl')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'toplam_proje_tl')"
+    class="hucre-input" autofocus
+  >
+</td>
+
+<!-- 7. KUR DEĞERİ VE BİRİMİ -->
+<td 
+  style="border: 1px solid #000; padding: 8px; background-color: #ffe699; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'kur_degeri')"
+  title="Kur değerini değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <!-- Sadece kur rakamını değiştirir, para birimi (EUR, USD vb.) sabit kalır -->
+  <span v-if="duzenlenenHucre !== index + '-kur_degeri'">{{ item.kur_degeri }} ({{ item.para_birimi }})</span>
+  <div v-else style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+    <input 
+      v-model="item.kur_degeri" 
+      type="number" step="0.0001"
+      @blur="kaydetVeKapat(item, index, 'kur_degeri')" 
+      @keyup.enter="kaydetVeKapat(item, index, 'kur_degeri')"
+      class="hucre-input" style="width: 70px;" autofocus
+    >
+  </div>
+</td>
+
+<!-- 8. NOTLAR -->
+<td 
+  style="border: 1px solid #000; padding: 8px; background-color: #ffe699; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'notlar')"
+  title="Not eklemek veya değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <!-- Eğer not yoksa '-' çizer, varsa notu gösterir -->
+  <span v-if="duzenlenenHucre !== index + '-notlar'">{{ item.notlar || '-' }}</span>
+  <input 
+    v-else 
+    v-model="item.notlar" 
+    type="text"
+    @blur="kaydetVeKapat(item, index, 'notlar')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'notlar')"
+    class="hucre-input" style="width: 100%; text-align: left;" autofocus
+    placeholder="Not giriniz..."
+  >
+</td>
             </tr>
           </tbody>
         </table>
@@ -121,19 +279,162 @@
               </thead>
               <tbody>
                 <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="text-align: center; border-bottom: 1px solid #ccc; background-color: #f2f2f2;">
-                  <td style="border: 1px solid #000; padding: 8px;">{{ index + 1 }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; text-align: left; background-color: white;">{{ item.malzeme }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; background-color: white;">{{ item.pano }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.para_birimi === 'TRY' ? item.birim_proje_tl : (item.birim_proje_tl * item.kur_degeri).toFixed(2) }} ₺</td>
-                  <td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'EUR' ? item.birim_proje_tl + ' €' : '-' }}</td>
-                  <td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'USD' ? item.birim_proje_tl + ' $' : '-' }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">{{ (item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)).toFixed(2) }} ₺</td>
-                  <td style="border: 1px solid #000; padding: 8px;">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">{{ ((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))).toFixed(2) }} ₺</td>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">{{ item.adet }}</td>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">{{ (((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))) * item.adet).toFixed(2) }} ₺</td>
-                  <td style="border: 1px solid #000; padding: 8px;">{{ item.kur_degeri }} ({{ item.para_birimi }})</td>
-                  <td style="border: 1px solid #000; padding: 8px; background-color: white;">-</td>
+                  <!-- 1. SIRA (Sabit) -->
+<td style="border: 1px solid #000; padding: 8px;">{{ index + 1 }}</td>
+
+<!-- 2. MALİYET KALEMİ (Malzeme Adı - Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; text-align: left; background-color: white; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'malzeme')"
+  title="Malzemeyi değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-malzeme'">{{ item.malzeme }}</span>
+  <input 
+    v-else 
+    v-model="item.malzeme" 
+    type="text" 
+    @blur="kaydetVeKapat(item, index, 'malzeme')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'malzeme')"
+    class="hucre-input" style="width: 100%; text-align: left;" autofocus
+  >
+</td>
+
+<!-- 3. MALİYET GRUBU (Pano Türü - Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; background-color: white; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'pano')"
+  title="Panoyu değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-pano'">{{ item.pano }}</span>
+  <input 
+    v-else 
+    v-model="item.pano" 
+    type="text" 
+    @blur="kaydetVeKapat(item, index, 'pano')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'pano')"
+    class="hucre-input" style="width: 100%; text-align: center;" autofocus
+  >
+</td>
+
+<!-- 4. MALİYET TRY (Ana Birim Fiyat - Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; font-weight: bold; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'birim_proje_tl')"
+  title="Fiyatı değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-birim_proje_tl'">
+    {{ item.para_birimi === 'TRY' ? item.birim_proje_tl : (item.birim_proje_tl * item.kur_degeri).toFixed(2) }} ₺
+  </span>
+  <input 
+    v-else 
+    v-model="item.birim_proje_tl" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'birim_proje_tl')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'birim_proje_tl')"
+    class="hucre-input" autofocus
+  >
+</td>
+
+<!-- 5. MALİYET EUR (Sabit - Veritabanındaki para birimine göre şekillenir) -->
+<td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'EUR' ? item.birim_proje_tl + ' €' : '-' }}</td>
+
+<!-- 6. MALİYET USD (Sabit - Veritabanındaki para birimine göre şekillenir) -->
+<td style="border: 1px solid #000; padding: 8px;">{{ item.para_birimi === 'USD' ? item.birim_proje_tl + ' $' : '-' }}</td>
+
+<!-- 7. TEKLİF BEDELİ (Sabit f(x) - Kar marjı eklendiği için formül kendisi hesaplar) -->
+<td style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #e2efda;">
+  {{ (item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)).toFixed(2) }} ₺
+</td>
+
+<!-- 8. İSKONTO ORANI (Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'iskonto_orani')"
+  title="İskontoyu değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-iskonto_orani'">% {{ item.iskonto_orani ? (item.iskonto_orani * 100).toFixed(0) : '0' }}</span>
+  <input 
+    v-else 
+    v-model="item.iskonto_orani" 
+    type="number" step="0.01"
+    @blur="kaydetVeKapat(item, index, 'iskonto_orani')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'iskonto_orani')"
+    class="hucre-input" autofocus
+  >
+</td>
+
+<!-- 9. f(x) NET FİYAT (Sabit f(x) - Düzenlediğin fiyattan iskontoyu otomatik düşer) -->
+<td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">
+  {{ ((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))).toFixed(2) }} ₺
+</td>
+<td 
+  style="border: 1px solid #000; padding: 8px; font-weight: bold; cursor: pointer;" 
+  @dblclick="duzenlemeyiAc(index, 'adet')"
+  title="Adedi değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <!-- Düzenleme modunda DEĞİLSE normal yazıyı göster -->
+  <span v-if="duzenlenenHucre !== index + '-adet'">
+    {{ item.adet }}
+  </span>
+  
+  <!-- Çift tıklandıysa bu input kutusunu göster -->
+  <input 
+    v-else 
+    v-model="item.adet" 
+    type="number" 
+    @blur="kaydetVeKapat(item, index)" 
+    @keyup.enter="kaydetVeKapat(item, index)"
+    class="hucre-input"
+    autofocus
+  >
+</td>         
+                  <!-- 10. f(x) TOPLAM (Sabit - Formül kendi hesaplar) -->
+<td style="border: 1px solid #000; padding: 8px; font-weight: bold; color: #c00000; background-color: #fff2cc;">
+  {{ (((item.birim_proje_tl * (1 + (genelKarMarji || 0) / 100)) * (1 - (item.iskonto_orani || 0))) * item.adet).toFixed(2) }} ₺
+</td>
+
+<!-- 11. KUR DEĞERİ VE BİRİMİ (Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'kur_degeri')"
+  title="Kuru değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-kur_degeri'">{{ item.kur_degeri }} ({{ item.para_birimi }})</span>
+  <div v-else style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+    <input 
+      v-model="item.kur_degeri" 
+      type="number" step="0.0001"
+      @blur="kaydetVeKapat(item, index, 'kur_degeri')" 
+      @keyup.enter="kaydetVeKapat(item, index, 'kur_degeri')"
+      class="hucre-input" style="width: 70px;" autofocus
+    >
+  </div>
+</td>
+
+<!-- 12. TEKLİF SONUNDA DETAY VERİLECEKLER / NOTLAR (Düzenlenebilir) -->
+<td 
+  style="border: 1px solid #000; padding: 8px; background-color: white; cursor: pointer;"
+  @dblclick="duzenlemeyiAc(index, 'notlar')"
+  title="Not eklemek veya değiştirmek için çift tıklayın"
+  :class="{ 'manuel-duzenlendi': item.degistirildi }"
+>
+  <span v-if="duzenlenenHucre !== index + '-notlar'">{{ item.notlar || '-' }}</span>
+  <input 
+    v-else 
+    v-model="item.notlar" 
+    type="text"
+    @blur="kaydetVeKapat(item, index, 'notlar')" 
+    @keyup.enter="kaydetVeKapat(item, index, 'notlar')"
+    class="hucre-input" style="width: 100%; text-align: left;" autofocus
+    placeholder="Not giriniz..."
+  >
+</td>
                 </tr>
               </tbody>
               <tfoot v-if="filtrelenmisPanoIcerigi.length > 0">
@@ -595,7 +896,12 @@ const panoIcerigiGetir = async () => {
   if (!inceleProjeId.value || !incelePanoTuru.value) return;
   try {
    const response = await axios.get(`${API_BASE}/projeler/${inceleProjeId.value}/maliyet-raporu`);
-    panoIcerigi.value = response.data.detaylar || []; 
+
+   
+   console.log("TEST VERİSİ:", response.data.detaylar); 
+   
+   
+   panoIcerigi.value = response.data.detaylar || []; 
     panoAcildi.value = true;
   } catch (error) { 
     console.error("Kayıtlar çekilemedi", error);
@@ -670,6 +976,39 @@ const excelIndir = () => {
   XLSX.writeFile(workbook, dosyaAdi);
 };
 
+
+// 1. Hangi hücrenin düzenlendiğini takip edecek reaktif değişken
+const duzenlenenHucre = ref(null);
+
+// 2. Çift tıklanınca inputu açan fonksiyon (Artık ID değil, index alıyor)
+const duzenlemeyiAc = (index, sutunAdi) => {
+  duzenlenenHucre.value = index + '-' + sutunAdi;
+};
+
+// 3. Kutu dışına tıklanınca veya Enter'a basılınca çalışacak fonksiyon
+// Panolar.vue içindeki kaydetVeKapat fonksiyonu
+const kaydetVeKapat = async (item, index, sutunAdi) => {
+  duzenlenenHucre.value = null; // Düzenleme modunu kapat
+  
+  try {
+    // Dinamik veri nesnesi oluştur
+    const guncellenecekVeri = {};
+    guncellenecekVeri[sutunAdi] = item[sutunAdi];
+
+    // Python endpoint'ine dinamik güncelleme isteği gönder
+    await axios.put(`${API_BASE}/pano-malzeme-guncelle/${item.id}`, guncellenecekVeri);
+    
+    // Başarılı olursa görsel işaretçi ekle
+    item.degistirildi = true; 
+    
+    console.log(`✅ ${sutunAdi} başarıyla güncellendi.`);
+    
+  } catch (error) {
+    console.error("Güncelleme hatası:", error);
+    alert("Kayıt sırasında bir hata oluştu.");
+  }
+};
+
 const pdfIndir = () => {
   if (kullaniciRolu.value === 'saha_ekibi') return;
   const element = document.getElementById('p1-teklif-sablonu');
@@ -727,8 +1066,26 @@ input, select { padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; fo
 h3 { color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 8px; margin-bottom: 20px; }
 
 
+/* Düzenleme kutusunun genel tasarımı */
+.hucre-input {
+  width: 100%;
+  padding: 4px;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
 
+/* Değişiklik yapılmış hücrelerin arka planı (Görsel Geri Bildirim) */
+.manuel-duzenlendi {
+  background-color: #fff9c4 !important; /* Pastel sarı bir ton */
+  transition: background-color 0.5s ease;
+}
 
+/* Düzenleme modunda olmayan hücrelere imleç efekti */
+td[title] {
+  cursor: pointer;
+}
 /* PDF GENEL AYARLARI */
 .pdf-container {
   width: 210mm; /* A4 Genişliği */
