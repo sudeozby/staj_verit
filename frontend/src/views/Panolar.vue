@@ -224,168 +224,258 @@
   <div style="display: none;">
       <div id="p1-teklif-sablonu" class="pdf-container">
 
-        <div class="pdf-sayfa" style="page-break-after: always;">
-          <div class="kapak-logo-alani">
-            <h1 class="temkon-logo">TEM<span style="color:red">K</span>ON</h1>
-            <div class="kirmizi-cizgi"></div>
-            <p class="kapak-alt-baslik">proje teklif dosyası</p>
-          </div>
-          <div class="kapak-bilgiler">
-            <table class="kapak-tablo">
-              <tr>
-                <td class="baslik">FİRMA / COMPANY</td>
-                <td class="iki-nokta">:</td>
-                <td class="deger">{{ aktifProje.musteri || 'Belirtilmedi' }}</td>
-              </tr>
-              <tr>
-                <td class="baslik">TEKLİF TARİHİ / OFFER DATE</td>
-                <td class="iki-nokta">:</td>
-                <td class="deger">{{ aktifProje.tarih || new Date().toLocaleDateString('tr-TR') }}</td>
-              </tr>
-              <tr>
-                <td class="baslik">İLGİLİ PROJE / RELATED PROJECT</td>
-                <td class="iki-nokta">:</td>
-                <td class="deger">{{ aktifProje.proje_adi || 'Belirtilmedi' }}</td>
-              </tr>
-              <tr>
-                <td class="baslik">REFERANS / REFERENCE ID</td>
-                <td class="iki-nokta">:</td>
-                <td class="deger">{{ aktifProje.referans_no || 'Atanmadı' }}</td>
-              </tr>
-              <tr>
-                <td class="baslik">HAZIRLAYAN / PREPARED BY</td>
-                <td class="iki-nokta">:</td>
-                <td class="deger">{{ aktifProje.hazirlayan || 'Belirtilmedi' }}</td>
-              </tr>
-            </table>
-          </div>
-        </div>
-
-        <div class="pdf-sayfa" style="page-break-after: always;">
-          <div class="sayfa-ust-bilgi">
-            <span class="sol-soluk">temkon hakkında</span>
-            <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
-          </div>
-          <div class="kirmizi-cizgi"></div>
-          <div class="hakkinda-icerik">
-            <h3 class="hakkinda-baslik">türk endüstriyel elektrik ve makine<br>kontrol ekipmanları teknolojisi</h3>
-            <p class="hakkinda-metin">
-              TEMKON 'Türk Endüstriyel Elektrik ve Makine Kontrol Ekipmanları Teknolojisi' çağın gerektirdiği teknolojik gelişme hızını endüstriyel tesislere uygulamak, üretim süreçlerinde insan faktörünü azaltmak, ürün kalitesindeki homojenliği sağlamak ve bu yüksek teknolojiyi türk sanayisine katma değer kazandıracak biçimde projelendirerek uygulamak üzere bilgi birikimini ve tecrübesini türk ekonomisinin hizmetine sunmaktan gurur duymaktadır.
-            </p>
-            <p class="hakkinda-metin mt-4">
-              TEMKON, müşteri memnuniyetini mühendisliğin temel ilkeleri ile harmanlayıp çevreye ve doğaya saygılı, enerji verimliliği yüksek, teknolojik sürekliliği olan ve endüstrinin can damarındaki projelere, sürekli kendini yenileyen dinamik kadrosu ve her gün yenilenen teknolojisiyle cevap vermeye devam edecektir.
-            </p>
-            <div class="hakkinda-vizyon">
-              <p><strong>yenilikçi</strong> - sürekli düşün, sürekli geliştir</p>
-              <p><strong>teknik</strong> - mühendislik, know how, işgücü</p>
-              <p><strong>projeksiyon</strong> - yüksel, parla, birlikte çalış</p>
+        <!-- SAYFA 1: KAPAK -->
+        <div class="pdf-sayfa" style="page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; height: 280mm; padding-top: 15mm; padding-bottom: 10mm; box-sizing: border-box; overflow: hidden;">
+          <div>
+            <div class="kapak-logo-alani">
+              <h1 class="temkon-logo">TEM<span style="color:red">K</span>ON</h1>
+              <div class="kirmizi-cizgi"></div>
+              <p class="kapak-alt-baslik">proje teklif dosyası</p>
+            </div>
+            <div class="kapak-bilgiler">
+              <table class="kapak-tablo">
+                <tbody>
+                  <tr>
+                    <td class="baslik">FİRMA / COMPANY</td>
+                    <td class="iki-nokta">:</td>
+                    <td class="deger">{{ aktifProje.musteri || 'Belirtilmedi' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="baslik">TEKLİF TARİHİ / OFFER DATE</td>
+                    <td class="iki-nokta">:</td>
+                    <td class="deger">{{ aktifProje.tarih || new Date().toLocaleDateString('tr-TR') }}</td>
+                  </tr>
+                  <tr>
+                    <td class="baslik">İLGİLİ PROJE / RELATED PROJECT</td>
+                    <td class="iki-nokta">:</td>
+                    <td class="deger">{{ aktifProje.proje_adi || 'Belirtilmedi' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="baslik">REFERANS / REFERENCE ID</td>
+                    <td class="iki-nokta">:</td>
+                    <td class="deger">{{ aktifProje.referans_no || 'Atanmadı' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="baslik">HAZIRLAYAN / PREPARED BY</td>
+                    <td class="iki-nokta">:</td>
+                    <td class="deger">{{ aktifProje.hazirlayan || 'Belirtilmedi' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-
-        <div class="pdf-sayfa" style="page-break-after: always;">
-          <div class="sayfa-ust-bilgi">
-            <span class="sol-soluk">proje teklifi</span>
-            <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
-          </div>
-          <div class="kirmizi-cizgi"></div>
-          <div class="teklif-giris">
-            Fiyat teklifimiz aşağıdaki tablo ve ticari maddelerden ibarettir. Teklifimizin olumlu karşılanacağını umuyoruz. TEMKON olarak <strong>{{ yeniProje.musteri }}</strong> ile çalışmaktan kıvanç duyacağız.
-          </div>
-          <h3 class="kirmizi-baslik-ortali">PROJE TEKLİFİ</h3>
-          <table class="teklif-tablosu">
-            <thead>
-              <tr>
-                <th>NU.</th>
-                <th>TANIM</th>
-                <th>ADET</th>
-                <th>ADET FİYATI</th>
-                <th>TOPLAM FİYAT</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1</td>
-                <td>{{ yeniProje.proje_adi }} - Kontrol Sistemi Panolarının Projelendirilmesi ve İmalatı İçin Gerekli Malzeme Temini</td>
-                <td>1</td>
-                <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
-                <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>Saha Montajı İçin Gerekli Kablo, Kablo Kanalı, Saha Montaj Malzemesi Temini ve İşçilik</td>
-                <td>1</td>
-                <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
-                <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="4" class="sag-hizala"><strong>PROJE TOPLAMI (KDV HARİÇ):</strong></td>
-                <td><strong>{{ ((dinamikAraToplam || 0) + (iscilikGideri || 0)).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</strong></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div class="pdf-sayfa" style="page-break-after: always;">
-          <div class="sayfa-ust-bilgi">
-            <span class="sol-soluk">ticari şartlar</span>
-            <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
-          </div>
-          <div class="kirmizi-cizgi"></div>
-          <h3 class="siyah-baslik-ortali">TİCARİ ve TEKNİK ŞARTLAR</h3>
-          <ol class="sartlar-listesi">
-            <li>Teklif edilen fiyatlara KDV dahil değildir.</li>
-            <li>Döviz verilen tekliflerde fatura kesim tarihindeki TCMB efektif satış kuru esas alınacaktır.</li>
-            <li>Teklifimiz sahadaki panolara malzeme temini ve montajından ibarettir.</li>
-            <li>Teklifin geçerlilik süresi 15 gündür.</li>
-            <li>Ödeme şekli: %40 Sipariş ile birlikte avans, kalan tutar pano tesliminde nakit/havale şeklindedir.</li>
-          </ol>
-          <div class="imza-alani">
-            <p class="imza-sirket-adi"><strong>TEMKON Endüstriyel Elektrik Yazılım Bilgisayar ve Elektronik Sistemler İnş. San. Tic. Ltd. Şti.</strong></p>
-            <div class="kase-kutusu">
-              <p class="soluk-yazi">Kaşe ve İmza</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="pdf-sayfa" v-if="filtrelenmisPanoIcerigi && filtrelenmisPanoIcerigi.length > 0">
-          <div class="sayfa-ust-bilgi">
-            <span class="sol-soluk">detay bilgiler</span>
-            <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
-          </div>
-          <div class="kirmizi-cizgi"></div>
-          <h3 class="siyah-baslik-ortali">PROJE DETAYLARI</h3>
           
-          <div class="detay-tablo-kapsayici" style="margin-top: 20px;">
-            <div style="background-color: #a9c4e4 !important; padding: 10px; text-align: center; font-weight: bold; border: 2px solid #2c3e50; border-bottom: none; font-size: 14px; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-              PANOLAR DETAYLI MALZEME LİSTESİ
+          <!-- FOOTER -->
+          <div style="padding-left: 40px; padding-right: 40px;">
+            <div style="font-weight: bold; color: #2c3e50; font-size: 12px; text-align: left; margin-bottom: 2px;">
+              TEMKON Endüstriyel Elektrik San. Tic. Ltd. Şti.
             </div>
-            <table class="detay-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; color: #000; border: 2px solid #2c3e50;">
+            <div style="border-top: 2px solid #c00000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; color: #7f8c8d; font-size: 10px; text-align: left; line-height: 1.4;">
+              <div>
+                Özsan Sanayi Sitesi 30. Blok NO:25 Yeşilyurt / MALATYA<br>
+                t: +90 (422) 238 55 11 &nbsp;&nbsp;&nbsp; f: +90 (422) 238 55 22 &nbsp;&nbsp;&nbsp; temkon.com.tr
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAYFA 2: HAKKINDA -->
+        <div class="pdf-sayfa" style="page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; height: 280mm; padding-top: 15mm; padding-bottom: 10mm; box-sizing: border-box; overflow: hidden;">
+          <div>
+            <div class="sayfa-ust-bilgi">
+              <span class="sol-soluk">temkon hakkında</span>
+              <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+            </div>
+            <div class="kirmizi-cizgi"></div>
+            <div class="hakkinda-icerik">
+              <h3 class="hakkinda-baslik">türk endüstriyel elektrik ve makine<br>kontrol ekipmanları teknolojisi</h3>
+              <p class="hakkinda-metin">
+                TEMKON 'Türk Endüstriyel Elektrik ve Makine Kontrol Ekipmanları Teknolojisi' çağın gerektirdiği teknolojik gelişme hızını endüstriyel tesislere uygulamak, üretim süreçlerinde insan faktörünü azaltmak, ürün kalitesindeki homojenliği sağlamak ve bu yüksek teknolojiyi türk sanayisine katma değer kazandıracak biçimde projelendirerek uygulamak üzere bilgi birikimini ve tecrübesini türk ekonomisinin hizmetine sunmaktan gurur duymaktadır.
+              </p>
+              <p class="hakkinda-metin mt-4">
+                TEMKON, müşteri memnuniyetini mühendisliğin temel ilkeleri ile harmanlayıp çevreye ve doğaya saygılı, enerji verimliliği yüksek, teknolojik sürekliliği olan ve endüstrinin can damarındaki projelere, sürekli kendini yenileyen dinamik kadrosu ve her gün yenilenen teknolojisiyle cevap vermeye devam edecektir.
+              </p>
+              <div class="hakkinda-vizyon">
+                <p><strong>yenilikçi</strong> - sürekli düşün, sürekli geliştir</p>
+                <p><strong>teknik</strong> - mühendislik, know how, işgücü</p>
+                <p><strong>projeksiyon</strong> - yüksel, parla, birlikte çalış</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- FOOTER -->
+          <div style="padding-left: 40px; padding-right: 40px;">
+            <div style="font-weight: bold; color: #2c3e50; font-size: 12px; text-align: left; margin-bottom: 2px;">
+              TEMKON Endüstriyel Elektrik San. Tic. Ltd. Şti.
+            </div>
+            <div style="border-top: 2px solid #c00000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; color: #7f8c8d; font-size: 10px; text-align: left; line-height: 1.4;">
+              <div>
+                Özsan Sanayi Sitesi 30. Blok NO:25 Yeşilyurt / MALATYA<br>
+                t: +90 (422) 238 55 11 &nbsp;&nbsp;&nbsp; f: +90 (422) 238 55 22 &nbsp;&nbsp;&nbsp; temkon.com.tr
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAYFA 3: FİYAT TEKLİF TABLOSU -->
+        <div class="pdf-sayfa" style="page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; height: 280mm; padding-top: 15mm; padding-bottom: 10mm; box-sizing: border-box; overflow: hidden;">
+          <div>
+            <div class="sayfa-ust-bilgi">
+              <span class="sol-soluk">proje teklifi</span>
+              <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+            </div>
+            <div class="kirmizi-cizgi"></div>
+            <div class="teklif-giris">
+              Fiyat teklifimiz aşağıdaki tablo ve ticari maddelerden ibarettir. Teklifimizin olumlu karşılanacağını umuyoruz. TEMKON olarak <strong>{{ aktifProje.musteri || 'Değerli Müşterimiz' }}</strong> ile çalışmaktan kıvanç duyacağız.
+            </div>
+            <h3 class="kirmizi-baslik-ortali">PROJE TEKLİFİ</h3>
+            <table class="teklif-tablosu">
               <thead>
-                <tr style="background-color: #34495e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                  <th style="padding: 10px; border: 1px solid #2c3e50; width: 8%; text-align: center;">NU.</th>
-                  <th style="padding: 10px; border: 1px solid #2c3e50; width: 42%; text-align: left;">MALZEME ADI</th>
-                  <th style="padding: 10px; border: 1px solid #2c3e50; width: 15%; text-align: center;">MARKA</th>
-                  <th style="padding: 10px; border: 1px solid #2c3e50; width: 25%; text-align: center;">SİPARİŞ NUMARASI</th>
-                  <th style="padding: 10px; border: 1px solid #2c3e50; width: 10%; text-align: center;">ADET</th>
+                <tr>
+                  <th>NU.</th>
+                  <th>TANIM</th>
+                  <th>ADET</th>
+                  <th>ADET FİYATI</th>
+                  <th>TOPLAM FİYAT</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="page-break-inside: avoid;">
-                  <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ index + 1 }}</td>
-                  <td style="padding: 8px; border: 1px solid #2c3e50; text-align: left;">{{ item.malzeme }}</td>
-                  <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ item.marka || '-' }}</td>
-                  <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ item.siparis_kodu || item.siparis_no || '-' }}</td>
-                  <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center; font-weight: bold;">{{ item.adet }}</td>
+                <tr>
+                  <td>1</td>
+                  <td>{{ aktifProje.proje_adi || 'Proje' }} - Kontrol Sistemi Panolarının Projelendirilmesi ve İmalatı İçin Gerekli Malzeme Temini</td>
+                  <td>1</td>
+                  <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+                  <td>{{ (dinamikAraToplam || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>Saha Montajı İçin Gerekli Kablo, Kablo Kanalı, Saha Montaj Malzemesi Temini ve İşçilik</td>
+                  <td>1</td>
+                  <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
+                  <td>{{ (iscilikGideri || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4" class="sag-hizala"><strong>PROJE TOPLAMI (KDV HARİÇ):</strong></td>
+                  <td><strong>{{ ((dinamikAraToplam || 0) + (iscilikGideri || 0)).toLocaleString('tr-TR', {minimumFractionDigits: 2}) }} ₺</strong></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
+          
+          <!-- FOOTER -->
+          <div style="padding-left: 40px; padding-right: 40px;">
+            <div style="font-weight: bold; color: #2c3e50; font-size: 12px; text-align: left; margin-bottom: 2px;">
+              TEMKON Endüstriyel Elektrik San. Tic. Ltd. Şti.
+            </div>
+            <div style="border-top: 2px solid #c00000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; color: #7f8c8d; font-size: 10px; text-align: left; line-height: 1.4;">
+              <div>
+                Özsan Sanayi Sitesi 30. Blok NO:25 Yeşilyurt / MALATYA<br>
+                t: +90 (422) 238 55 11 &nbsp;&nbsp;&nbsp; f: +90 (422) 238 55 22 &nbsp;&nbsp;&nbsp; temkon.com.tr
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- SAYFA 4: TİCARİ ŞARTLAR -->
+        <div class="pdf-sayfa" style="page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; height: 280mm; padding-top: 15mm; padding-bottom: 10mm; box-sizing: border-box; overflow: hidden;">
+          <div>
+            <div class="sayfa-ust-bilgi">
+              <span class="sol-soluk">ticari şartlar</span>
+              <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+            </div>
+            <div class="kirmizi-cizgi"></div>
+            <h3 class="siyah-baslik-ortali">TİCARİ ve TEKNİK ŞARTLAR</h3>
+            <ol class="sartlar-listesi">
+              <li>Teklif edilen fiyatlara KDV dahil değildir.</li>
+              <li>Döviz verilen tekliflerde fatura kesim tarihindeki TCMB efektif satış kuru esas alınacaktır.</li>
+              <li>Teklifimiz sahadaki panolara malzeme temini ve montajından ibarettir.</li>
+              <li>Teklifin geçerlilik süresi 15 gündür.</li>
+              <li>Ödeme şekli: %40 Sipariş ile birlikte avans, kalan tutar pano tesliminde nakit/havale şeklindedir.</li>
+            </ol>
+            <div class="imza-alani">
+              <p class="imza-sirket-adi"><strong>TEMKON Endüstriyel Elektrik Yazılım Bilgisayar ve Elektronik Sistemler İnş. San. Tic. Ltd. Şti.</strong></p>
+              <div class="kase-kutusu">
+                <p class="soluk-yazi">Kaşe ve İmza</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- FOOTER -->
+          <div style="padding-left: 40px; padding-right: 40px;">
+            <div style="font-weight: bold; color: #2c3e50; font-size: 12px; text-align: left; margin-bottom: 2px;">
+              TEMKON Endüstriyel Elektrik San. Tic. Ltd. Şti.
+            </div>
+            <div style="border-top: 2px solid #c00000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; color: #7f8c8d; font-size: 10px; text-align: left; line-height: 1.4;">
+              <div>
+                Özsan Sanayi Sitesi 30. Blok NO:25 Yeşilyurt / MALATYA<br>
+                t: +90 (422) 238 55 11 &nbsp;&nbsp;&nbsp; f: +90 (422) 238 55 22 &nbsp;&nbsp;&nbsp; temkon.com.tr
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAYFA 5: MALZEME DETAY LİSTESİ -->
+        <div class="pdf-sayfa" v-if="filtrelenmisPanoIcerigi && filtrelenmisPanoIcerigi.length > 0" style="page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; height: 280mm; padding-top: 15mm; padding-bottom: 10mm; box-sizing: border-box; overflow: hidden;">
+          <div>
+            <div class="sayfa-ust-bilgi">
+              <span class="sol-soluk">detay bilgiler</span>
+              <h2 class="temkon-logo-kucuk">TEM<span style="color:red">K</span>ON</h2>
+            </div>
+            <div class="kirmizi-cizgi"></div>
+            <h3 class="siyah-baslik-ortali">PROJE DETAYLARI</h3>
+            
+            <div class="detay-tablo-kapsayici" style="margin-top: 20px;">
+              <div style="background-color: #a9c4e4 !important; padding: 10px; text-align: center; font-weight: bold; border: 2px solid #2c3e50; border-bottom: none; font-size: 14px; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                PANOLAR DETAYLI MALZEME LİSTESİ
+              </div>
+              <table class="detay-tablosu" style="width: 100%; border-collapse: collapse; font-size: 13px; color: #000; border: 2px solid #2c3e50;">
+                <thead>
+                  <tr style="background-color: #34495e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <th style="padding: 10px; border: 1px solid #2c3e50; width: 8%; text-align: center;">NU.</th>
+                    <th style="padding: 10px; border: 1px solid #2c3e50; width: 42%; text-align: left;">MALZEME ADI</th>
+                    <th style="padding: 10px; border: 1px solid #2c3e50; width: 15%; text-align: center;">MARKA</th>
+                    <th style="padding: 10px; border: 1px solid #2c3e50; width: 25%; text-align: center;">SİPARİŞ NUMARASI</th>
+                    <th style="padding: 10px; border: 1px solid #2c3e50; width: 10%; text-align: center;">ADET</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in filtrelenmisPanoIcerigi" :key="index" style="page-break-inside: avoid;">
+                    <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ index + 1 }}</td>
+                    <td style="padding: 8px; border: 1px solid #2c3e50; text-align: left;">{{ item.malzeme }}</td>
+                    <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ item.marka || '-' }}</td>
+                    <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center;">{{ item.siparis_kodu || item.siparis_no || '-' }}</td>
+                    <td style="padding: 8px; border: 1px solid #2c3e50; text-align: center; font-weight: bold;">{{ item.adet }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- FOOTER -->
+          <div style="padding-left: 40px; padding-right: 40px;">
+            <div style="font-weight: bold; color: #2c3e50; font-size: 12px; text-align: left; margin-bottom: 2px;">
+              TEMKON Endüstriyel Elektrik San. Tic. Ltd. Şti.
+            </div>
+            <div style="border-top: 2px solid #c00000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; color: #7f8c8d; font-size: 10px; text-align: left; line-height: 1.4;">
+              <div>
+                Özsan Sanayi Sitesi 30. Blok NO:25 Yeşilyurt / MALATYA<br>
+                t: +90 (422) 238 55 11 &nbsp;&nbsp;&nbsp; f: +90 (422) 238 55 22 &nbsp;&nbsp;&nbsp; temkon.com.tr
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div> </div> </template>
+    </div>
+  </div>
+</template>
 
 <script setup>
 import html2pdf from 'html2pdf.js';
