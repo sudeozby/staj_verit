@@ -1,245 +1,293 @@
 <template>
-  <div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #ecf0f1;">
-    
-    <div class="login-form" style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; border-top: 6px solid #2c3e50;">
-      
-      <div style="margin-bottom: 30px;">
-        <h1 style="font-size: 36px; margin: 0; color: #2c3e50;">TEM<span style="color: #e74c3c;">K</span>ON</h1>
-        <h2 style="font-size: 14px; margin: 5px 0 0 0; color: #7f8c8d;">Maliyet Yönetim Paneli</h2>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <!-- Logo ve Başlık Alanı -->
+      <div class="logo-alani">
+        <h1 class="temkon-logo">TEM<span class="kirmizi">K</span>ON</h1>
+        <div class="ayrac"></div>
+        <p class="logo-text">Kurumsal ERP & Üretim Yönetim Sistemi</p>
       </div>
 
-      <div class="form-grubu" style="margin-bottom: 20px; text-align: left;">
-        <label style="font-weight: bold; color: #34495e; font-size: 14px; display: block; margin-bottom: 5px;">Kullanıcı Adı / E-Posta</label>
-        <input 
-          v-model="kullaniciAdi" 
-          type="text" 
-          placeholder="Adınızı giriniz..." 
-          @keyup.enter="girisKontrol"
-          style="width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; box-sizing: border-box; font-size: 14px;"
-        />
-      </div>
-
-      <div class="form-grubu" style="margin-bottom: 10px; text-align: left;">
-        <label style="font-weight: bold; color: #34495e; font-size: 14px; display: block; margin-bottom: 5px;">Şifre</label>
-        <input 
-          v-model="sifre" 
-          type="password" 
-          placeholder="••••••••" 
-          @keyup.enter="girisKontrol"
-          style="width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; box-sizing: border-box; font-size: 14px;"
-        />
-        
-        <p v-if="girisHatasi" style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 5px; margin-bottom: 0;">
-          Hatalı kullanıcı adı veya şifre girdiniz!
-        </p>
-      </div>
-
-      <div style="text-align: right; margin-bottom: 25px;">
-        <a href="#" @click.prevent="sifreModalAcik = true" style="color: #8e44ad; font-size: 13px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-          Şifremi Unuttum?
-        </a>
-      </div>
-
-      <button @click="girisKontrol" style="width: 100%; background-color: #2c3e50; color: white; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s;">
-        Sisteme Giriş Yap
-      </button>
-
-    </div>
-
-    <div v-if="sifreModalAcik" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(4px);">
-      <div style="background: white; padding: 30px; border-radius: 10px; width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-top: 5px solid #e74c3c;">
-        
-        <div style="font-size: 45px; margin-bottom: 10px;">🔒</div>
-        <h3 style="margin-top: 0; color: #2c3e50; font-size: 20px;">Sistem Erişimi Kilitli</h3>
-        
-        <div style="background: #fdf2e9; padding: 15px; border-radius: 6px; border-left: 4px solid #e74c3c; text-align: left; margin-bottom: 20px;">
-          <p style="color: #7f8c8d; font-size: 13px; line-height: 1.6; margin: 0;">
-            Kurumsal güvenlik politikalarımız gereği otomatik şifre sıfırlama işlemi <b>yapılamamaktadır.</b>
-            <br><br>
-            Sisteme yeniden erişim sağlamak ve şifrenizi yenilemek için lütfen <b>Sistem Yöneticisi</b> ile iletişime geçiniz.
-          </p>
+      <!-- Giriş Formu -->
+      <form @submit.prevent="girisYap" class="login-form">
+        <div class="input-grup">
+          <label>Kullanıcı Adı</label>
+          <div class="input-kutu">
+            <span class="ikon">👤</span>
+            <input 
+              v-model="kullanici.kullanici_adi" 
+              type="text" 
+              placeholder="Sistem kullanıcı adınız" 
+              required 
+            />
+          </div>
         </div>
 
-        <button @click="sifreModalAcik = false" style="width: 100%; background-color: #e74c3c; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.3s;">
-          Anladım, Kapat
+        <div class="input-grup">
+          <label>Şifre</label>
+          <div class="input-kutu">
+            <span class="ikon">🔒</span>
+            <input 
+              v-model="kullanici.sifre" 
+              type="password" 
+              placeholder="Şifreniz" 
+              required 
+            />
+          </div>
+        </div>
+
+        <div class="ek-ayarlar">
+          <label class="hatirla">
+            <input type="checkbox" /> Beni Hatırla
+          </label>
+          <!-- Şifremi Unuttum Butonu -->
+          <a href="#" @click.prevent="sifremiUnuttum" class="sifre-unuttum">Şifremi Unuttum?</a>
+        </div>
+
+        <button type="submit" class="btn-giris" :disabled="yukleniyor">
+          {{ yukleniyor ? 'Sisteme Bağlanılıyor...' : 'Giriş Yap' }}
         </button>
-        
+      </form>
+
+      <!-- Alt Bilgi -->
+      <div class="login-footer">
+        <p>Giriş yaparak sistem <a href="#">Güvenlik Politikası</a>'nı kabul etmiş sayılırsınız.</p>
+        <p class="versiyon">v1.0.0 © 2026 TEMKON Yazılım</p>
       </div>
     </div>
 
+    <!-- Sistem Bildirimleri (Hata veya Uyarılar) -->
+    <transition name="slide-up">
+      <div v-if="mesaj" :class="['bildirim', hataVar ? 'hata' : 'bilgi']">
+        {{ mesaj }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'; // ref ve onMounted'ı burada birleştirdik
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_BASE } from '../config';
 
 const router = useRouter();
 
-
-// Değişkenlerimiz
-const kullaniciAdi = ref('');
-const sifre = ref('');
-const girisHatasi = ref(false);
-const sifreModalAcik = ref(false);
-
-
-onMounted(() => {
-  if (!localStorage.getItem('girisYapildi')) {
-    router.push('/'); // Giriş yapmadıysa zorla login sayfasına at
-  }
+const kullanici = ref({
+  kullanici_adi: '',
+  sifre: ''
 });
 
-// Python (FastAPI) Arka Ucuna Bağlanan Güvenlik Kapısı
-// Python (FastAPI) Arka Ucuna Bağlanan YENİ Güvenlik Kapısı
-const girisKontrol = async () => {
-  // Her denemede hata mesajını önce bir gizleyelim
-  girisHatasi.value = false;
+const yukleniyor = ref(false);
+const mesaj = ref('');
+const hataVar = ref(false);
 
+const bildirimGoster = (metin, hata = false) => {
+  mesaj.value = metin;
+  hataVar.value = hata;
+  setTimeout(() => { mesaj.value = ''; hataVar.value = false; }, 5000);
+};
+
+// YÖNETİCİNİN BAHSETTİĞİ O GÜVENLİK KURALI BURADA
+const sifremiUnuttum = () => {
+  bildirimGoster("Güvenlik prosedürleri gereği şifreniz otomatik sıfırlanamaz. Lütfen Sistem Yöneticinizle iletişime geçin.", true);
+};
+
+const girisYap = async () => {
+  yukleniyor.value = true;
   try {
-    // ESKİ: `${API_BASE}/giris-yap`
-    // YENİ VE KESİN ADRES: "http://127.0.0.1:8000/api/login"
-    const response = await axios.post("http://127.0.0.1:8000/api/login", {
-      kullanici_adi: kullaniciAdi.value,
-      sifre: sifre.value
-    });
+    // Backend'e giriş isteği atıyoruz
+    const response = await axios.post(`${API_BASE}/ekip/login`, kullanici.value);
+    
+    // API'den dönen verileri alıyoruz
+    const rol = response.data.rol || 'saha_ekibi';
+    const ad = response.data.kullanici_adi || kullanici.value.kullanici_adi;
 
-    // Şifre doğruysa backend bize kullanıcının rolünü yollayacak (Örn: 'yonetici')
-    const gelenRol = response.data.rol;
-    
-    // Tarayıcı hafızasına yetkileri kaydediyoruz
+    // Sisteme (Tarayıcı Hafızasına) kaydediyoruz
     localStorage.setItem('girisYapildi', 'true');
-    localStorage.setItem('kullaniciRolu', gelenRol);
-    localStorage.setItem('kullanici_adi', kullaniciAdi.value);
-    
-    // Panolar sayfasına geçiş yapıyoruz
-    router.push('/panel');
+    localStorage.setItem('kullaniciRolu', rol);
+    localStorage.setItem('kullanici_adi', ad);
+
+    // 🔥 İŞTE O AKILLI YÖNLENDİRME (ROUTING) 🔥
+  if (rol === 'yonetici') {
+  router.push('/dashboard'); // Yöneticiyi olması gerektiği gibi Ana Ekrana (Özet'e) gönder!
+} else {
+  router.push('/panolar'); 
+}
     
   } catch (error) {
-    // Backend hata fırlatırsa (yanlış şifre vb.) burası çalışır
-    girisHatasi.value = true;
-    console.error("Giriş başarısız oldu:", error);
+    bildirimGoster(error.response?.data?.detail || "Giriş başarısız. Kullanıcı adı veya şifre hatalı.", true);
+  } finally {
+    yukleniyor.value = false;
   }
 };
 </script>
 
 <style scoped>
+/* KURUMSAL LOGİN TASARIMI */
 .login-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9; /* Zarif gri/mavi arka plan */
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding: 20px;
 }
 
-.login-kart {
+.login-card {
   background: #ffffff;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   width: 100%;
   max-width: 420px;
-  border-top: 6px solid #2c3e50;
-  box-sizing: border-box;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  border-top: 4px solid #0f172a; /* Kurumsal Lacivert Çizgi */
 }
 
+/* Logo Tasarımı */
 .logo-alani {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 }
-
-.logo-yazisi {
-  font-size: 36px;
+.temkon-logo {
+  font-size: 32px;
   font-weight: 900;
+  color: #0f172a;
   margin: 0;
-  letter-spacing: 2px;
-  color: #2c3e50;
+  letter-spacing: 1px;
+}
+.temkon-logo .kirmizi { color: #e11d48; }
+.ayrac {
+  width: 40px;
+  height: 3px;
+  background-color: #e11d48;
+  margin: 10px auto;
+  border-radius: 2px;
+}
+.logo-text {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
 }
 
-.kirmizi {
-  color: #c0392b;
-}
-
-.logo-alani h2 {
-  font-size: 14px;
-  color: #7f8c8d;
-  margin-top: 5px;
-  font-weight: 400;
-}
-
+/* Form Tasarımı */
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-
-.form-grubu {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-grubu label {
+.input-grup label {
+  display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #34495e;
+  color: #475569;
+  margin-bottom: 8px;
 }
-
-input, select {
-  padding: 12px;
-  border: 1px solid #bdc3c7;
+.input-kutu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-kutu .ikon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  font-size: 16px;
+}
+.input-kutu input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 14px;
-  color: #2c3e50;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
+  color: #334155;
+  transition: all 0.2s;
+  background-color: #f8fafc;
 }
-
-input:focus, select:focus {
-  border-color: #3498db;
+.input-kutu input:focus {
+  border-color: #0f172a;
   outline: none;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
 }
 
-.btn-giris {
-  background-color: #2c3e50;
-  color: white;
-  padding: 14px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 10px;
-  width: 100%;
-}
-
-.btn-giris:hover {
-  background-color: #1a252f;
-}
-
-.hata-kutusu {
-  margin-top: 20px;
-  padding: 12px;
-  background-color: #fdf2f2;
-  color: #c0392b;
-  border: 1px solid #fadbd8;
-  border-radius: 6px;
-  text-align: center;
+/* Ek Ayarlar (Hatırla & Unuttum) */
+.ek-ayarlar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 13px;
+}
+.hatirla {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  cursor: pointer;
+}
+.sifre-unuttum {
+  color: #e11d48;
+  text-decoration: none;
   font-weight: 600;
+  transition: 0.2s;
+}
+.sifre-unuttum:hover {
+  text-decoration: underline;
+  color: #be123c;
 }
 
-/* YENİ EKLENEN: Şifremi unuttum linkinin üzerine gelince parlaması için */
-a {
-  transition: opacity 0.2s;
+/* Buton */
+.btn-giris {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 10px;
 }
-a:hover {
-  opacity: 0.7;
+.btn-giris:hover:not(:disabled) {
+  background-color: #1e293b;
+  transform: translateY(-1px);
 }
+.btn-giris:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Alt Bilgi */
+.login-footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.login-footer a { color: #64748b; text-decoration: underline; }
+.versiyon { margin-top: 5px; font-weight: 600; }
+
+/* Bildirim Alert */
+.bildirim {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  z-index: 1000;
+  text-align: center;
+}
+.bildirim.hata { background-color: #e11d48; }
+.bildirim.bilgi { background-color: #10b981; }
+
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translate(-50%, 20px); }
 </style>

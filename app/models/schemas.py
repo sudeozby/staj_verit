@@ -1,8 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
+from enum import Enum
 
-# 1. PROJE ŞABLONU
+# 1. ENUMLAR (Daha güvenli girişler için)
+class ParaBirimi(str, Enum):
+    TRY = "TRY"
+    USD = "USD"
+    EUR = "EUR"
+
+# 2. PROJE ŞABLONU
 class ProjeEkle(BaseModel):
     proje_adi: str
     musteri: Optional[str] = None
@@ -10,49 +17,51 @@ class ProjeEkle(BaseModel):
     lokasyon: Optional[str] = None
     teklif_konusu: Optional[str] = None
     teklif_tarihi: Optional[date] = None
-    teklif_referans_no: Optional[str] = None
     hazirlayan: Optional[str] = None
     notlar: Optional[str] = None # Boş bırakılabilir
-    referans_no: Optional[str] = None
+    referans_no: Optional[str] = None # Arka planda otomatik üretilecek
 
-# 2. MALZEME ŞABLONU
+# 3. MALZEME ŞABLONU
 class MalzemeEkle(BaseModel):
     siparis_kodu: str
     urun_adi: str
-    marka: Optional[str] = "-"       # Gözden kaçmasın diye çizgi koyduk
-    urun_grubu: Optional[str] = "-"  # Gözden kaçmasın diye çizgi koyduk
-    tedarikci: Optional[str] = "-"   # Gözden kaçmasın diye çizgi koyduk
-    liste_fiyati: float
-    para_birimi: str = "TRY"         # Varsayılan para birimi TRY oldu
-    grup_iskonto_id: Optional[int] = None  # Yeni eklediğimiz iskonto katmanı
+    marka: Optional[str] = "-"     
+    urun_grubu: Optional[str] = "-"  # Gözden kaçmasın diye çizgi 
+    tedarikci: Optional[str] = "-"   
+    liste_fiyati: float = Field(..., ge=0) # Fiyat negatif olamaz!
+    para_birimi: ParaBirimi = ParaBirimi.TRY # Enum kullanarak zorunlu kıldık   
+    grup_iskonto_id: Optional[int] = None  # İskonto katmanı
     notlar: Optional[str] = "-"      # Boş kalırsa çizgi atacak
 
-# 3. PANO MALZEME ATAMA
+# 4. PANO MALZEME ATAMA
 class ProjePanoEkle(BaseModel):
     proje_id: int
     malzeme_id: int
     pano_turu: str
-    adet: int
+    adet: int = Field(..., gt=0) # Adet 0'dan büyük olmalı!
     notlar: Optional[str] = None # NOTLAR EKLENDİ
 
-# 4. FİYAT GÜNCELLEME (İstediğin yeni şema)
+# 5. FİYAT GÜNCELLEME
 class FiyatGuncelle(BaseModel):
     liste_fiyati: float
     grup_iskonto_id: Optional[int] = None
     notlar: Optional[str] = None # Fiyat güncelleme sebebi için notlar alanı
 
-# 5. KULLANICI ŞABLONU
+# 6. KULLANICI ŞABLONLARI
 class KullaniciOlustur(BaseModel):
     kullanici_adi: str
     sifre: str = Field(..., min_length=5, description="Şifre en az 5 karakter olmalıdır.")
     rol: str
 
-
 class KullaniciGiris(BaseModel):
     kullanici_adi: str
     sifre: str
 
-# 6. İSKONTO GRUBU ŞABLONU
+class SifreGuncelle(BaseModel):
+    kullanici_adi: str
+    sifre: str = Field(..., min_length=5, description="Yeni şifre en az 5 karakter olmalıdır.")
+    
+# 7. İSKONTO GRUBU ŞABLONU
 class IskontoGrubuEkle(BaseModel):
     grup_adi: str
     maliyet_iskonto: float = 0.0
