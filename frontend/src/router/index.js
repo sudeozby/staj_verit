@@ -15,10 +15,11 @@ const router = createRouter({
     { path: '/katalog-bom', name: 'KatalogBOM', component: () => import('../views/MalzemeKatalog.vue') },
     
     // TEKLİF VE REVİZYON
-    { path: '/teklif-ekrani', name: 'TeklifEkrani', component: () => import('../views/Teklif.vue') },
+    // TEKLİF VE REVİZYON (DÜZELTİLDİ)
+    { path: '/teklif-ekrani', name: 'TeklifHizli', component: () => import('../views/Teklif.vue') }, // Kısa özet sayfası
+    { path: '/analiz-merkezi', name: 'AnalizMerkezi', component: () => import('../views/TeklifEkrani.vue') }, // 5 Sayfalık Asıl PDF
     { path: '/revizyon-merkezi', name: 'RevizyonMerkezi', component: () => import('../views/RevizyonMerkezi.vue') },
     { path: '/revizyon-karsilastir', name: 'RevizyonKarsilastir', component: () => import('../views/RevizyonCompare.vue') },
-    
     
     // ÖZET EKRANI (ANA SAYFA)
     { path: '/dashboard', name: 'Dashboard', component: () => import('../views/Ozet.vue') },

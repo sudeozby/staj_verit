@@ -723,19 +723,29 @@ const pdfIndir = () => {
   if (kullaniciRolu.value === 'saha_ekibi') return;
   const element = document.getElementById('p1-teklif-sablonu');
   if (!element) return alert("Şablon bulunamadı.");
+  
   const p = aktifProje.value; 
   if (!p || Object.keys(p).length === 0) {
     alert("DİKKAT: Proje bulunamadı!");
     return;
   }
+  
+  // 1. Müşteri adındaki boşlukları alt tire yap
   const musteriAdi = p.musteri ? String(p.musteri).replace(/\s+/g, '_') : 'Musteri';
-  const refNo = p.referans_no ? String(p.referans_no) : 'Teklif_Dosyasi';
+  
+  // 2. Referans No boşsa Proje Adını kullan, o da boşsa "Teklif" yaz (Boşlukları düzelt)
+  let refNo = p.referans_no ? String(p.referans_no) : (p.proje_adi ? String(p.proje_adi).replace(/\s+/g, '_') : 'Teklif_Dosyasi');
+  
+  const dosyaAdi = `${musteriAdi}_${refNo}.pdf`;
+
   const secenekler = {
-    margin: 0, filename: `${musteriAdi}_${refNo}.pdf`, image: { type: 'jpeg', quality: 0.98 },
+    margin: 0, filename: dosyaAdi, image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
-  html2pdf().set(secenekler).from(element).save();
+  
+  // ASIL ÇÖZÜM: save() içine dosya adını parametre olarak verip zorunlu tutuyoruz.
+  html2pdf().set(secenekler).from(element).save(dosyaAdi);
 };
 
 const verileriYukle = async () => {

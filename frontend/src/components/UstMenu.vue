@@ -57,6 +57,11 @@
             </router-link>
 
             <div class="menu-ayrac">TİCARİ & TEDARİK</div>
+            <!-- 5 SAYFALIK ASIL PDF ŞABLONU LİNKİ -->
+            <router-link to="/analiz-merkezi" class="nav-link" @click="menuAcik = false">
+              <span class="ikon">📈</span> Analiz & Resmi Teklif (PDF)
+            </router-link>
+            
             <router-link to="/teklif-ekrani" class="nav-link" @click="menuAcik = false">
               <span class="ikon">📝</span> Teklif Yönetimi
             </router-link>
