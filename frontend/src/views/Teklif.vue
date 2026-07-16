@@ -42,7 +42,7 @@
               <p>Maliyet analizi ve PDF teklifi hazırlamak için sol taraftan bir proje seçiniz.</p>
             </div>
             
-            <div v-else class="simulasyon-alani">
+            <div v-else class="simulasyon-alani" id="hizli-teklif-alani">
               <div class="simulasyon-header">
                 <h4>{{ seciliProje.proje_adi }}</h4>
                 <button @click="pdfOlustur" class="btn-islem btn-kirmizi pdf-btn">
@@ -124,6 +124,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
 import { API_BASE } from '../config';
+import html2pdf from 'html2pdf.js';
 
 const projeler = ref([]);
 const seciliProje = ref(null);
@@ -216,7 +217,22 @@ const teklifIptalVeStokIade = async (teklifId) => {
   }
 };
 const pdfOlustur = () => {
-  alert(`"${seciliProje.value.proje_adi}" projesi için resmi teklif PDF dosyası oluşturuluyor...\n(Bu özellik HTML2PDF veya Backend PDF kütüphanesi ile entegre edilecektir.)`);
+  const element = document.getElementById('hizli-teklif-alani');
+  
+  if (!element) {
+    alert("Yazdırılacak alan bulunamadı.");
+    return;
+  }
+
+  const musteri = seciliProje.value?.musteri ? seciliProje.value.musteri.replace(/\s+/g, '_') : 'Musteri';
+  
+  html2pdf().set({
+    margin: [15, 10, 15, 10], 
+    filename: `${musteri}_Hizli_Teklif.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(element).save();
 };
 </script>
 

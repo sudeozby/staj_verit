@@ -19,6 +19,7 @@ const router = createRouter({
     { path: '/revizyon-merkezi', name: 'RevizyonMerkezi', component: () => import('../views/RevizyonMerkezi.vue') },
     { path: '/revizyon-karsilastir', name: 'RevizyonKarsilastir', component: () => import('../views/RevizyonCompare.vue') },
     
+    
     // ÖZET EKRANI (ANA SAYFA)
     { path: '/dashboard', name: 'Dashboard', component: () => import('../views/Ozet.vue') },
     
