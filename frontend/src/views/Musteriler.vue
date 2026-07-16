@@ -198,17 +198,10 @@ const musterileriGetir = async () => {
     const res = await axios.get(`${API_BASE}/musteriler`);
     musteriler.value = res.data;
   } catch (error) {
-    // Backend hazırlığı bitene kadar Demo Veri
-    if(musteriler.value.length === 0) {
-      musteriler.value = [
-        { id: 1, firma_adi: 'Rönesans Holding A.Ş.', sehir: 'Ankara', yetkili_kisi: 'Hasan Yurt', telefon: '0532 123 4567', email: 'hasan@ronesans.com', vergi_no: '7350012345', aktif_proje_sayisi: 3, aktif_mi: true },
-        { id: 2, firma_adi: 'Togg Otomotiv', sehir: 'Bursa', yetkili_kisi: 'Ayşe Demir (Proje Yön.)', telefon: '0555 987 6543', email: 'ayse.demir@togg.com.tr', vergi_no: '8450123987', aktif_proje_sayisi: 1, aktif_mi: true },
-        { id: 3, firma_adi: 'X İnşaat Teknoloji', sehir: 'İstanbul', yetkili_kisi: 'Kaan Kaya', telefon: '0212 555 0011', email: 'info@xinsaat.com', vergi_no: '1234567890', aktif_proje_sayisi: 0, aktif_mi: false }
-      ];
-    }
+    console.error("Müşteriler yüklenemedi:", error);
+    musteriler.value = [];
   }
 };
-
 const modalKapat = () => {
   yeniMusteriModal.value = false;
   duzenlenenMusteriId.value = null;

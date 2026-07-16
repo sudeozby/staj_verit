@@ -146,15 +146,8 @@ const stoklariGetir = async () => {
     const res = await axios.get(`${API_BASE}/depo/stoklar`);
     malzemeler.value = res.data;
   } catch (error) {
-    // Backend yapılana kadar Demo Veri
-    if (malzemeler.value.length === 0) {
-      malzemeler.value = [
-        { id: 1, siparis_kodu: '1SDA067131R1', urun_adi: '3 Fazlı Motor 15kW', marka: 'ABB', urun_grubu: 'Şalt', mevcut_stok: 12, kritik_esik: 5 },
-        { id: 2, siparis_kodu: 'S7-1200', urun_adi: 'PLC İşlemci Modülü', marka: 'Siemens', urun_grubu: 'Otomasyon', mevcut_stok: 3, kritik_esik: 5 },
-        { id: 3, siparis_kodu: 'RLY-24V', urun_adi: '24V Röle', marka: 'Finder', urun_grubu: 'Şalt', mevcut_stok: 0, kritik_esik: 20 },
-        { id: 4, siparis_kodu: 'CBL-3X2.5', urun_adi: '3x2.5 NYAF Kablo (Metre)', marka: 'Hes', urun_grubu: 'Kablo', mevcut_stok: 450, kritik_esik: 100 }
-      ];
-    }
+    console.error("Stoklar yüklenemedi:", error);
+    malzemeler.value = [];
   }
 };
 

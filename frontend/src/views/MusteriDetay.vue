@@ -62,20 +62,13 @@ const router = useRouter();
 const musteri = ref({ projeler: [], revizyonlar: [] });
 
 onMounted(async () => {
-  const musteriId = route.params.id; // URL'den ID'yi alıyoruz
+  const musteriId = route.params.id; 
   try {
     const res = await axios.get(`${API_BASE}/musteriler/${musteriId}/detay`);
     musteri.value = res.data;
   } catch (err) {
-    // DEMO VERİ
-    musteri.value = {
-      firma_adi: 'Rönesans Holding', yetkili_kisi: 'Hasan Yurt', telefon: '0532 123 4567',
-      projeler: [{ id: 1, ad: 'Malatya Şehir Hastanesi', durum: 'Montajda' }],
-      revizyonlar: [
-        { id: 1, is_emri_id: 103, tarih: '2026-07-14T09:30:00', notu: 'Şalt malzemesi Siemens olacak.', dosya_adi: 'TKLF-103_R01' },
-        { id: 2, is_emri_id: 103, tarih: '2026-06-10T11:00:00', notu: 'Kablo kanalları metal yapılacak.', dosya_adi: 'TKLF-103_R02' }
-      ]
-    };
+    console.error("Müşteri detayları yüklenemedi:", err);
+    musteri.value = { projeler: [], revizyonlar: [] };
   }
 });
 

@@ -217,14 +217,8 @@ const revizyonlariGetir = async () => {
     const res = await axios.get(`${API_BASE}/revizyonlar`);
     revizyonlar.value = res.data;
   } catch (error) {
-    // Backend hazırlığı bitene kadar Demo Veri
-    if(revizyonlar.value.length === 0) {
-      revizyonlar.value = [
-        { id: 1, is_emri_id: 103, proje_adi: 'Güneş Enerji Santrali', pano_turu: 'KONTROL S.', dosya_adi: 'TKLF-103_R01', talep_eden: 'ahmet_teklif', tarih: '2026-07-14T09:30:00', revizyon_notu: 'Şalt malzemesi markası ABB yerine Siemens olacak.', durum: 'ONAY_BEKLIYOR' },
-        { id: 2, is_emri_id: 88, proje_adi: 'Fabrika Üretim Bandı', pano_turu: 'MCC 2', dosya_adi: 'TKLF-88_R01', talep_eden: 'mehmet_teklif', tarih: '2026-07-13T14:15:00', revizyon_notu: 'Kapak ölçülerinde müşteri revizyon istedi.', durum: 'ONAYLANDI' },
-        { id: 3, is_emri_id: 88, proje_adi: 'Fabrika Üretim Bandı', pano_turu: 'MCC 2', dosya_adi: 'TKLF-88_R02', talep_eden: 'mehmet_teklif', tarih: '2026-07-14T10:15:00', revizyon_notu: 'Kablo kesitleri yükseltildi.', durum: 'ONAY_BEKLIYOR' }
-      ];
-    }
+    console.error("Revizyonlar yüklenemedi:", error);
+    revizyonlar.value = [];
   }
 };
 
@@ -233,11 +227,8 @@ const aktifIsleriGetir = async () => {
     const res = await axios.get(`${API_BASE}/imalat/is-emirleri/aktif`);
     aktifIsEmirleri.value = res.data;
   } catch (error) {
-    aktifIsEmirleri.value = [
-      { id: 101, proje_adi: 'Malatya Şehir Hastanesi', pano_turu: 'MCC 1' },
-      { id: 88, proje_adi: 'Fabrika Üretim Bandı', pano_turu: 'MCC 2' },
-      { id: 103, proje_adi: 'Güneş Enerji Santrali', pano_turu: 'KONTROL S.' }
-    ];
+    console.error("Aktif iş emirleri yüklenemedi:", error);
+    aktifIsEmirleri.value = [];
   }
 };
 

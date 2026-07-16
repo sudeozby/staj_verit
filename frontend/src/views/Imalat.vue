@@ -139,14 +139,7 @@ const isEmirleriniGetir = async () => {
     isEmirleri.value = res.data;
   } catch (error) {
     console.error("İş emirleri yüklenemedi:", error);
-    // Demo veri: Sahada revizyon başlatan değil, merkezin kilitlediği bir örnek
-    if(isEmirleri.value.length === 0) {
-      isEmirleri.value = [
-        { id: 101, proje_adi: 'Malatya Şehir Hastanesi', musteri: 'Rönesans Holding', pano_turu: 'MCC 1', malzeme_sayisi: 12, durum: 'MONTAJ_BEKLIYOR' },
-        { id: 102, proje_adi: 'Fabrika Üretim Bandı', musteri: 'Togg', pano_turu: 'ADP 1', malzeme_sayisi: 45, durum: 'MONTAJDA' },
-        { id: 103, proje_adi: 'Güneş Enerji Santrali', musteri: 'Enerjisa', pano_turu: 'KONTROL S.', malzeme_sayisi: 8, durum: 'MERKEZ_REVIZYON' }
-      ];
-    }
+    isEmirleri.value = []; // Demo veri yerine sadece boş dizi bırakıyoruz
   }
 };
 
