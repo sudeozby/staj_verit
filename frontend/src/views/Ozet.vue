@@ -31,8 +31,13 @@
               <tbody>
                 <tr v-for="talep in talepler" :key="talep.id">
                   <td class="kod">#REQ-{{ talep.id }}</td>
-                  <td>{{ talep.urun_adi || talep.malzeme_kodu }}</td>
-                  <td class="kalin">{{ talep.adet }}</td>
+                  
+                  <!-- Otomatikse kodu, manuelse adını basar -->
+                  <td>{{ talep.malzeme_adi || talep.malzeme_kodu }}</td>
+                  
+                  <!-- Otomatikse talep_edilen_adet, manuelse adet basar -->
+                  <td class="kalin">{{ talep.adet || talep.talep_edilen_adet }}</td>
+                  
                   <td class="islem-sutun">
                     <button class="btn-ince btn-onay" @click="durumGuncelle(talep.id, 'ONAYLANDI')">Onayla</button>
                     <button class="btn-ince btn-red" @click="durumGuncelle(talep.id, 'REDDEDILDI')">Reddet</button>

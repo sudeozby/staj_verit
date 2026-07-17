@@ -21,7 +21,7 @@
           <div class="input-grubu select-kutu">
             <select v-model="seciliDurum">
               <option value="HEPSI">Tüm İş Emirleri</option>
-              <option value="MONTAJ_BEKLIYOR">⏳ Montaj Bekleyenler</option>
+              <option value="YENİ">⏳ Montaj Bekleyenler</option>
               <option value="MONTAJDA">🔧 Montajı Devam Edenler</option>
               <option value="MERKEZ_REVIZYON">⚠️ Merkezde Revizyonda Olanlar</option>
               <option value="TAMAMLANDI">✅ Tamamlananlar</option>
@@ -40,54 +40,59 @@
               <tr>
                 <th>İş Emri Kodu</th>
                 <th>Proje & Müşteri</th>
-                <th>Pano Türü</th>
+                <th>Pano Seçimi (İşlem Yapılacak)</th>
                 <th>Reçete</th>
-                <th>Güncel Durum</th>
+                <th>Seçili Pano Durumu</th>
                 <th class="sag-hizali">İşlem</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="filtrelenmisIsler.length === 0">
-                <td colspan="6" class="bos-durum">Şu an size atanmış bir iş emri bulunmuyor.</td>
+              <tr v-if="gruplanmisProjeler.length === 0">
+                <td colspan="6" class="bos-durum">Şu an size atanmış veya bu kritere uyan bir iş bulunmuyor.</td>
               </tr>
               
-              <tr v-for="isEmri in filtrelenmisIsler" :key="isEmri.id" :class="{'kilitli-satir': isEmri.durum === 'MERKEZ_REVIZYON'}">
-                <td class="kod">#WORK-{{ isEmri.id }}</td>
+              <tr v-for="proje in gruplanmisProjeler" :key="proje.proje_id" :class="{'kilitli-satir': aktifPanoGetir(proje).durum === 'MERKEZ_REVIZYON'}">
+                <td class="kod">#WORK-{{ proje.proje_id }}</td>
                 <td>
-                  <div class="proje-adi">{{ isEmri.proje_adi }}</div>
-                  <div class="proje-musteri">{{ isEmri.musteri }}</div>
+                  <div class="proje-adi">{{ proje.proje_adi }}</div>
+                  <div class="proje-musteri">{{ proje.musteri }}</div>
                 </td>
+                
+                <!-- ARTIK BAĞIMSIZ VE CANLI HAFIZAYA (seciliPanolar) BAĞLI -->
                 <td>
-                  <span class="pano-rozeti">{{ isEmri.pano_turu }}</span>
+                  <select v-model="seciliPanolar[proje.proje_id]" class="pano-secim-kutusu">
+                    <option v-for="pano in proje.panolar" :key="pano.pano_turu" :value="pano.pano_turu">
+                      {{ pano.pano_turu }} ({{ durumMetniGetir(pano.durum).split(' ')[0] }})
+                    </option>
+                  </select>
                 </td>
+                
                 <td class="malzeme-ozet">
-                  <span class="malzeme-sayisi">{{ isEmri.malzeme_sayisi }} Kalem</span>
-                  <button @click="malzemeDetayGoster(isEmri)" class="btn-link">Listeyi Gör</button>
+                  <span class="malzeme-sayisi">Liste Oku</span>
+                  <button @click="malzemeDetayGoster(proje.proje_id, seciliPanolar[proje.proje_id])" class="btn-link">Listeyi Gör</button>
                 </td>
+                
+                <!-- DURUM VE İŞLEM KUTUSU DİREKT SEÇİLİ PANOYA BAKIYOR -->
                 <td>
-                  <span :class="['durum-rozeti', isEmri.durum.toLowerCase()]">
-                    {{ durumMetniGetir(isEmri.durum) }}
+                  <span :class="['durum-rozeti', (aktifPanoGetir(proje).durum || 'yeni').toLowerCase()]">
+                    {{ durumMetniGetir(aktifPanoGetir(proje).durum) }}
                   </span>
                 </td>
+                
                 <td class="islemler">
-                  <!-- EĞER MERKEZDE REVİZYONDAYSA SAHA EKİBİ HİÇBİR ŞEY YAPAMAZ -->
-                  <div v-if="isEmri.durum === 'MERKEZ_REVIZYON'" class="kilitli-uyari">
+                  <div v-if="aktifPanoGetir(proje).durum === 'MERKEZ_REVIZYON'" class="kilitli-uyari">
                     🔒 Ofis Onayı Bekleniyor
                   </div>
-                  
-                  <!-- EĞER İŞ TAMAMLANDIYSA SADECE İZLER -->
-                  <div v-else-if="isEmri.durum === 'TAMAMLANDI'" class="kilitli-uyari yetki-yok">
+                  <div v-else-if="aktifPanoGetir(proje).durum === 'TAMAMLANDI'" class="kilitli-uyari yetki-yok">
                     İşlem Kapatıldı
                   </div>
-
-                  <!-- SAHA EKİBİ SADECE İŞE BAŞLAYABİLİR VEYA BİTİREBİLİR -->
                   <select 
                     v-else
                     class="hizli-islem-select" 
-                    @change="durumDegistir(isEmri, $event.target.value)" 
-                    :value="isEmri.durum"
+                    @change="durumDegistir(proje.proje_id, seciliPanolar[proje.proje_id], $event.target.value)" 
+                    :value="aktifPanoGetir(proje).durum"
                   >
-                    <option value="MONTAJ_BEKLIYOR" disabled>⏳ Montaj Bekliyor</option>
+                    <option value="YENİ" disabled>⏳ Montaj Bekliyor</option>
                     <option value="MONTAJDA">🔧 Montaja Başla</option>
                     <option value="TAMAMLANDI">✅ İşlemi Tamamla</option>
                   </select>
@@ -103,7 +108,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+// YENİ: watch import edildi!
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
 import { API_BASE } from '../config';
@@ -112,21 +118,58 @@ const isEmirleri = ref([]);
 const aramaMetni = ref('');
 const seciliDurum = ref('HEPSI');
 
-// Computed Özellikler
-const bekleyenIsSayisi = computed(() => isEmirleri.value.filter(i => i.durum === 'MONTAJ_BEKLIYOR').length);
+// YENİ: Hangi projenin hangi panosuna bakıldığını tutan canlı hafıza
+const seciliPanolar = ref({}); 
+
+const bekleyenIsSayisi = computed(() => isEmirleri.value.filter(i => i.durum === 'YENİ').length);
 const montajdakiSayisi = computed(() => isEmirleri.value.filter(i => i.durum === 'MONTAJDA').length);
 
-const filtrelenmisIsler = computed(() => {
-  let sonuc = isEmirleri.value;
-  if (seciliDurum.value !== 'HEPSI') sonuc = sonuc.filter(i => i.durum === seciliDurum.value);
+const gruplanmisProjeler = computed(() => {
+  const gruplar = {};
+  
+  isEmirleri.value.forEach(isEmri => {
+    if (!gruplar[isEmri.proje_id]) {
+      gruplar[isEmri.proje_id] = {
+        proje_id: isEmri.proje_id,
+        proje_adi: isEmri.proje_adi,
+        musteri: isEmri.musteri,
+        panolar: []
+      };
+    }
+    gruplar[isEmri.proje_id].panolar.push({
+      pano_turu: isEmri.pano_turu,
+      durum: isEmri.durum || 'YENİ'
+    });
+  });
+
+  let sonuc = Object.values(gruplar);
+
+  if (seciliDurum.value !== 'HEPSI') {
+    sonuc = sonuc.filter(p => p.panolar.some(pano => pano.durum === seciliDurum.value));
+  }
+
   if (aramaMetni.value) {
     const arama = aramaMetni.value.toLowerCase();
-    sonuc = sonuc.filter(i => 
-      i.proje_adi?.toLowerCase().includes(arama) || 
-      i.pano_turu?.toLowerCase().includes(arama)
+    sonuc = sonuc.filter(p => 
+      p.proje_adi?.toLowerCase().includes(arama) || 
+      p.panolar.some(pano => pano.pano_turu?.toLowerCase().includes(arama))
     );
   }
+
   return sonuc;
+});
+
+// YENİ: Kullanıcı üstten filtre değiştirdiğinde ("Montajda olanlar" gibi), 
+// alt tablodaki pano seçimini otomatik olarak ona uygun panoya kaydırır!
+watch(seciliDurum, (yeniDurum) => {
+  if (yeniDurum !== 'HEPSI') {
+    gruplanmisProjeler.value.forEach(p => {
+      const eslesenPano = p.panolar.find(pano => pano.durum === yeniDurum);
+      if (eslesenPano) {
+        seciliPanolar.value[p.proje_id] = eslesenPano.pano_turu;
+      }
+    });
+  }
 });
 
 onMounted(() => {
@@ -137,15 +180,29 @@ const isEmirleriniGetir = async () => {
   try {
     const res = await axios.get(`${API_BASE}/imalat/is-emirleri`);
     isEmirleri.value = res.data;
+    
+    // Veriler gelince her proje için ilk panoyu "Seçili" olarak hafızaya yazıyoruz
+    isEmirleri.value.forEach(isEmri => {
+      if (!seciliPanolar.value[isEmri.proje_id]) {
+        seciliPanolar.value[isEmri.proje_id] = isEmri.pano_turu;
+      }
+    });
   } catch (error) {
     console.error("İş emirleri yüklenemedi:", error);
-    isEmirleri.value = []; // Demo veri yerine sadece boş dizi bırakıyoruz
+    isEmirleri.value = []; 
   }
+};
+
+const aktifPanoGetir = (proje) => {
+  // Canlı hafızadan o projenin seçili panosunu bul
+  const seciliTur = seciliPanolar.value[proje.proje_id];
+  const pano = proje.panolar.find(p => p.pano_turu === seciliTur);
+  return pano || proje.panolar[0] || { durum: 'YENİ' };
 };
 
 const durumMetniGetir = (durum) => {
   const durumlar = {
-    'MONTAJ_BEKLIYOR': '⏳ Bekliyor',
+    'YENİ': '⏳ Montaj Bekliyor',
     'MONTAJDA': '🔧 Montajda',
     'MERKEZ_REVIZYON': '⚠️ Merkezde Revizyonda',
     'TAMAMLANDI': '✅ Tamamlandı'
@@ -153,28 +210,30 @@ const durumMetniGetir = (durum) => {
   return durumlar[durum] || durum;
 };
 
-// Saha Ekibi Sadece Başla/Bitir Yapabilir
-const durumDegistir = async (isEmri, yeniDurum) => {
+const durumDegistir = async (proje_id, pano_turu, yeniDurum) => {
   try {
     const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
-    await axios.put(`${API_BASE}/imalat/is-emirleri/${isEmri.id}/durum`, {
-      durum: yeniDurum
+    
+    await axios.put(`${API_BASE}/imalat/is-emirleri/${proje_id}/durum`, {
+      durum: yeniDurum,
+      pano_turu: pano_turu 
     }, {
       headers: { 'islem-yapan': aktifKullanici }
     });
     
-    const index = isEmirleri.value.findIndex(i => i.id === isEmri.id);
+    const index = isEmirleri.value.findIndex(i => i.proje_id === proje_id && i.pano_turu === pano_turu);
     if(index !== -1) {
       isEmirleri.value[index].durum = yeniDurum;
     }
     
   } catch (error) {
     alert("Durum güncellenemedi.");
+    isEmirleriniGetir(); 
   }
 };
 
-const malzemeDetayGoster = (isEmri) => {
-  alert(`Burası tıklandığında #${isEmri.id} nolu işin malzeme reçetesi açılacaktır.`);
+const malzemeDetayGoster = (proje_id, pano_turu) => {
+  alert(`Burası tıklandığında #${proje_id} nolu projenin ${pano_turu} reçetesi açılacaktır.`);
 };
 </script>
 
@@ -191,7 +250,6 @@ const malzemeDetayGoster = (isEmri) => {
 .rozet-kutu.montajda { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
 .rozet-kutu strong { font-size: 14px; margin-left: 5px; }
 
-/* Filtre Alanı */
 .filtre-alani { display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; }
 .input-grubu { position: relative; flex: 1; }
 .input-grubu.arama { flex: 2; }
@@ -203,13 +261,17 @@ const malzemeDetayGoster = (isEmri) => {
 .input-grubu select { padding-left: 15px; cursor: pointer; }
 .input-grubu input:focus, .input-grubu select:focus { border-color: #0f172a; }
 
-/* Tablo Yapısı */
 .tablo-sarmalayici { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
 .kurumsal-tablo { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
 .kurumsal-tablo th { background-color: #f1f5f9; color: #475569; padding: 15px 20px; font-weight: 600; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; }
 .kurumsal-tablo td { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
-/* Merkezde Revizyonda Olan Satır (Kilitli) */
+/* PANO SEÇİM KUTUSU */
+.pano-secim-kutusu {
+  padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; font-weight: 600; color: #0f172a; cursor: pointer; outline: none; background: #f8fafc; width: 100%; max-width: 180px; transition: 0.2s;
+}
+.pano-secim-kutusu:focus { border-color: #3b82f6; background: #fff; }
+
 .kilitli-satir td { background-color: #fffbeb !important; opacity: 0.8; }
 .kilitli-uyari { font-size: 11px; font-weight: 600; color: #d97706; }
 .yetki-yok { color: #94a3b8; }
@@ -217,20 +279,17 @@ const malzemeDetayGoster = (isEmri) => {
 .kod { font-family: monospace; color: #64748b; font-weight: 500; }
 .proje-adi { font-weight: 600; color: #0f172a; }
 .proje-musteri { font-size: 11px; color: #64748b; margin-top: 2px; }
-.pano-rozeti { background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; }
 
 .malzeme-ozet { display: flex; flex-direction: column; align-items: flex-start; }
 .malzeme-sayisi { font-weight: 600; color: #334155; font-size: 12px; }
 .btn-link { background: none; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; margin-top: 4px; text-decoration: underline; }
 
-/* Durum Rozetleri */
 .durum-rozeti { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; border: 1px solid; }
-.durum-rozeti.montaj_bekliyor { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+.durum-rozeti.yeni { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
 .durum-rozeti.montajda { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
 .durum-rozeti.merkez_revizyon { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
 .durum-rozeti.tamamlandi { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
 
-/* İşlem Select */
 .sag-hizali { text-align: right; }
 .islemler { text-align: right; }
 .hizli-islem-select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; color: #0f172a; cursor: pointer; outline: none; background: #fff; }

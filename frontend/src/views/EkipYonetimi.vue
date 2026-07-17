@@ -145,10 +145,14 @@ const kullaniciEkle = async () => {
     await kullanicilariGetir(); 
     alert("Yeni personel başarıyla eklendi!");
   } catch (error) {
-    if (error.response && error.response.status === 422) {
-      alert("Hata: Girdiğiniz bilgiler sistem kurallarıyla uyuşmuyor.");
+    if (error.response && error.response.status === 400) {
+      // İŞTE BURASI: Arka plandan gönderdiğimiz o yönlendirici mesajı direkt basıyoruz
+      alert(error.response.data.detail);
+    } else if (error.response && error.response.status === 422) {
+      alert("Hata: Girdiğiniz bilgiler sistem kurallarıyla uyuşmuyor.(Kayıtlı kullanıcı adı kullanmadığınıza emin olunuz.)");
     } else {
-      alert(`İşlem başarısız: ${error.response?.data?.detail || 'Geçici sorun.'}`);
+      alert("Sisteme bağlanılamadı. Lütfen internet bağlantınızı ve sunucuyu kontrol edin.");
+      console.error(error);
     }
   }
 };

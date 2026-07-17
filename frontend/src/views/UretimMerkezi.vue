@@ -39,8 +39,16 @@
                 <div class="ikili-sutun">
                   <div class="input-grubu">
                     <label>Müşteri Adı *</label>
-                    <input v-model="yeniProje.musteri" placeholder="Firma / Müşteri adı giriniz" required />
+                    <!-- list özelliği eklendi -->
+                    <input v-model="yeniProje.musteri" list="musteri-listesi" placeholder="Firma / Müşteri adı giriniz" required />
+                    
+                    <!-- Arama listesi eklendi -->
+                    <datalist id="musteri-listesi">
+                      <option v-for="m in musteriler" :key="m.id" :value="m.firma_adi"></option>
+                    </datalist>
                   </div>
+                    
+
                   <div class="input-grubu">
                     <label>Son Kullanıcı</label>
                     <input v-model="yeniProje.son_kullanici" placeholder="Sistemi kullanacak asıl firma" />
@@ -339,7 +347,16 @@ const hataVar = ref(false)
 
 const projeler = ref([])
 const malzemeler = ref([])
+const musteriler = ref([])
 
+const musterileriGetir = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/musteriler`)
+    musteriler.value = res.data
+  } catch (error) {
+    console.error("Müşteriler getirilemedi:", error)
+  }
+}
 const yeniGrup = ref({ grup_adi: '', maliyet_iskonto: null, proje_iskonto: null, satis_iskonto: null, notlar: '' });
 
 const yeniMalzeme = ref({ 
@@ -455,14 +472,22 @@ const panoyaEkle = async () => {
       headers: { 'islem-yapan': aktifKullanici }
     })
     bildirimGoster(res.data.mesaj || `Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`)
+    
+    // Eksik olan malzeme ve konum sıfırlamalarını ekledik
+    yeniPanoMalzeme.value.proje_id = '';
+    yeniPanoMalzeme.value.malzeme_id = ''; 
+    yeniPanoMalzeme.value.pano_turu = 'ADP 1'; 
     yeniPanoMalzeme.value.adet = 1;
-    yeniPanoMalzeme.value.ozel_iskonto = 0; 
+    yeniPanoMalzeme.value.ozel_iskonto = 0;
   } catch (error) { 
     bildirimGoster(error.response?.data?.detail || "Malzeme panoya atanamadı!", true) 
   }
 }
 
-onMounted(verileriYukle)
+onMounted(() => {
+  verileriYukle()
+  musterileriGetir()
+})
 </script>
 
 <style scoped>
