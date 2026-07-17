@@ -58,10 +58,9 @@
                 <td>
                   <div class="kod">#WORK-{{ rev.is_emri_id }}</div>
                   <div class="proje-adi">{{ rev.proje_adi }}</div>
-                  <span class="pano-rozeti">{{ rev.pano_turu }}</span>
+                  <span class="pano-rozeti">{{ rev.pano_turu || 'Pano' }}</span>
                 </td>
                 <td>
-                  <!-- OTOMATİK OLUŞTURULAN DOSYA İSMİ -->
                   <div class="dosya-kodu">
                     <span class="ikon">📄</span> {{ rev.dosya_adi }}
                   </div>
@@ -111,20 +110,22 @@
             <button @click="yeniRevizyonModal = false" class="kapat-btn">✕</button>
           </div>
           <div class="modal-body">
-            <p class="uyari-metni">İlgili iş emri sahadaki personelin ekranında kilitlenecektir.</p>
+            <p class="uyari-metni">Seçilen pano, sahadaki personelin ekranında anında kilitlenecektir.</p>
             
             <div class="input-grubu">
-              <label>Revizyona Girecek İş Emri</label>
-              <select v-model="yeniTaleb.is_emri_id" class="tam-genislik-input">
-                <option disabled value="">Seçiniz...</option>
-                <option v-for="isEmri in aktifIsEmirleri" :key="isEmri.id" :value="isEmri.id">
-                  #WORK-{{ isEmri.id }} | {{ isEmri.proje_adi }} ({{ isEmri.pano_turu }})
-                </option>
+              <label>Revizyona Girecek İş Emri & Pano</label>
+              <!-- DÜZENLENDİ: Karmakarışık listeyi optgroup ile gruplayıp sıraladık -->
+              <select v-model="seciliIsEmriObjesi" class="tam-genislik-input gruplu-select">
+                <option :value="null">Seçiniz...</option>
+                <optgroup v-for="(panolar, projeAdi) in gruplanmisIsEmirleri" :key="projeAdi" :label="projeAdi">
+                  <option v-for="(isEmri, index) in panolar" :key="index" :value="isEmri">
+                    📌 {{ isEmri.pano_turu }}
+                  </option>
+                </optgroup>
               </select>
             </div>
 
-            <!-- SİSTEMİN OTOMATİK HESAPLADIĞI DOSYA ADI -->
-            <div v-if="yeniTaleb.is_emri_id" class="otomatik-dosya-uyarisi">
+            <div v-if="seciliIsEmriObjesi" class="otomatik-dosya-uyarisi">
               <span class="etiket">Oluşturulacak Revizyon Dosyası:</span>
               <strong class="dosya-adi">{{ hesaplananDosyaAdi }}</strong>
             </div>
@@ -134,7 +135,7 @@
               <textarea 
                 v-model="yeniTaleb.revizyon_notu" 
                 rows="4" 
-                placeholder="Örn: Müşteri talebi üzerine 15kW motor yerine 22kW motor kullanılacak."
+                placeholder="Örn: Müşteri talebi üzerine MCC panosunda 15kW motor yerine 22kW motor kullanılacak."
                 class="tam-genislik-textarea"
               ></textarea>
             </div>
@@ -166,32 +167,40 @@ const seciliDurum = ref('HEPSI');
 
 const yeniRevizyonModal = ref(false);
 const yeniTaleb = ref({ is_emri_id: '', revizyon_notu: '' });
+const seciliIsEmriObjesi = ref(null);
 
-// İstatistikler
 const onayBekleyenSayisi = computed(() => revizyonlar.value.filter(r => r.durum === 'ONAY_BEKLIYOR').length);
 const aktifRevizyonSayisi = computed(() => revizyonlar.value.filter(r => r.durum === 'ONAYLANDI' || r.durum === 'ONAY_BEKLIYOR').length);
 
 // -------------------------------------------------------------
-// OTOMATİK DOSYA İSİMLENDİRME ALGORİTMASI (_R01, _R02)
+// YENİ: İŞ EMİRLERİNİ SIRALAYAN VE GRUPLAYAN MUHTEŞEM ALGORİTMA
 // -------------------------------------------------------------
-const hesaplananDosyaAdi = computed(() => {
-  if (!yeniTaleb.value.is_emri_id) return '';
+const gruplanmisIsEmirleri = computed(() => {
+  // 1. Önce ID'ye göre küçükten büyüğe sıralıyoruz (#WORK-1, #WORK-2 sırayla gelsin)
+  const siraliListe = [...aktifIsEmirleri.value].sort((a, b) => a.proje_id - b.proje_id);
   
-  // Önce seçilen iş emrinin referansını buluyoruz
-  const seciliIsEmri = aktifIsEmirleri.value.find(i => i.id === yeniTaleb.value.is_emri_id);
-  if (!seciliIsEmri) return '';
-
-  // Bu iş emrine ait geçmişteki revizyon sayısını hesaplıyoruz
-  const gecmisRevizyonSayisi = revizyonlar.value.filter(r => r.is_emri_id === yeniTaleb.value.is_emri_id).length;
+  // 2. Proje ismine göre grupluyoruz (Aynı projenin panoları alt alta dizilsin)
+  const gruplar = {};
+  siraliListe.forEach(isEmri => {
+    const grupBasligi = `#WORK-${isEmri.proje_id} | ${isEmri.proje_adi}`;
+    if (!gruplar[grupBasligi]) {
+      gruplar[grupBasligi] = [];
+    }
+    gruplar[grupBasligi].push(isEmri);
+  });
   
-  // +1 ekleyerek sıradaki numarayı buluyoruz (01, 02 formatında)
-  const siradakiNumara = gecmisRevizyonSayisi + 1;
-  const formatliNumara = String(siradakiNumara).padStart(2, '0');
-  
-  // Dosya adını birleştiriyoruz (Örn: TKLF-103_R01)
-  return `TKLF-${seciliIsEmri.id}_R${formatliNumara}`;
+  return gruplar;
 });
 // -------------------------------------------------------------
+
+const hesaplananDosyaAdi = computed(() => {
+  if (!seciliIsEmriObjesi.value) return '';
+  const p_id = seciliIsEmriObjesi.value.proje_id;
+  const gecmisRevizyonSayisi = revizyonlar.value.filter(r => r.is_emri_id === p_id).length;
+  const siradakiNumara = gecmisRevizyonSayisi + 1;
+  const formatliNumara = String(siradakiNumara).padStart(2, '0');
+  return `TKLF-${p_id}_R${formatliNumara}`;
+});
 
 const filtrelenmisRevizyonlar = computed(() => {
   let sonuc = revizyonlar.value;
@@ -246,13 +255,14 @@ const durumMetniGetir = (durum) => {
 };
 
 const revizyonTalebiOlustur = async () => {
-  if (!yeniTaleb.value.is_emri_id || !yeniTaleb.value.revizyon_notu) {
+  if (!seciliIsEmriObjesi.value || !yeniTaleb.value.revizyon_notu) {
     return alert("Lütfen iş emrini seçin ve revizyon notunu yazın.");
   }
   
-  // Gönderilecek veriye sistemin otomatik ürettiği dosya adını da ekliyoruz
   const gonderilecekVeri = {
-    ...yeniTaleb.value,
+    is_emri_id: seciliIsEmriObjesi.value.proje_id,
+    pano_turu: seciliIsEmriObjesi.value.pano_turu, 
+    revizyon_notu: yeniTaleb.value.revizyon_notu,
     dosya_adi: hesaplananDosyaAdi.value
   };
   
@@ -260,9 +270,12 @@ const revizyonTalebiOlustur = async () => {
     await axios.post(`${API_BASE}/revizyonlar/talep-et`, gonderilecekVeri, {
       headers: { 'islem-yapan': aktifKullanici.value }
     });
-    alert(`Revizyon talebi "${hesaplananDosyaAdi.value}" adıyla oluşturuldu. Saha ekranı kilitlendi, Yönetici onayı bekleniyor.`);
+    alert(`Revizyon talebi "${hesaplananDosyaAdi.value}" adıyla oluşturuldu. Yalnızca ilgili pano kilitlendi!`);
+    
     yeniRevizyonModal.value = false;
     yeniTaleb.value = { is_emri_id: '', revizyon_notu: '' };
+    seciliIsEmriObjesi.value = null; 
+    
     revizyonlariGetir();
   } catch (error) {
     alert("Talep oluşturulurken hata yaşandı.");
@@ -376,6 +389,11 @@ const revizyonReddet = async (revizyonId) => {
 .tam-genislik-input, .tam-genislik-textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; font-family: inherit; box-sizing: border-box; }
 .tam-genislik-textarea { resize: vertical; }
 .tam-genislik-input:focus, .tam-genislik-textarea:focus { border-color: #0f172a; }
+
+/* Gruplu Select için minik bir stil dokunuşu */
+.gruplu-select optgroup { font-weight: 700; color: #0f172a; background-color: #f8fafc; font-style: normal; }
+.gruplu-select option { font-weight: 500; color: #334155; padding: 4px; background-color: #fff;}
+
 .modal-footer { padding: 15px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; }
 
 @media (max-width: 768px) { .karti-header, .kontrol-paneli { flex-direction: column; align-items: flex-start; gap: 15px; } .filtre-grubu { width: 100%; flex-direction: column; } .arama-kutusu { width: 100%; } }

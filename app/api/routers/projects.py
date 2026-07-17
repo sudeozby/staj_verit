@@ -25,22 +25,33 @@ def yeni_proje_ekle(proje: ProjeEkle, islem_yapan: str = Header(default="Bilinme
 @router.post("/pano-malzeme-ekle")
 def projeye_pano_malzemesi_ekle(pano_veri: ProjePanoEkle, islem_yapan: str = Header(default="Bilinmeyen")):
     with get_db_session() as cur:
+        # 1. Malzemeyi Projenin Panosuna Ekle
         cur.execute("INSERT INTO proje_pano_listesi (proje_id, malzeme_id, pano_turu, adet, ozel_iskonto, notlar) VALUES (%s, %s, %s, %s, %s, %s)",
                     (pano_veri.proje_id, pano_veri.malzeme_id, pano_veri.pano_turu, pano_veri.adet, 0, None))
         
-        # ERP STOK ZEKASI (Otomatik Satın Alma Tetikleyici)
-        cur.execute("SELECT siparis_kodu, urun_adi FROM malzemeler WHERE id = %s", (pano_veri.malzeme_id,))
-        m = cur.fetchone()
-        if m and m['siparis_kodu']:
-            cur.execute("INSERT INTO malzeme_stok (malzeme_kodu, malzeme_adi, mevcut_stok, kritik_esik) VALUES (%s, %s, 0, 10) ON CONFLICT DO NOTHING", (m['siparis_kodu'], m['urun_adi']))
-            cur.execute("UPDATE malzeme_stok SET mevcut_stok = mevcut_stok - %s WHERE malzeme_kodu = %s RETURNING mevcut_stok, kritik_esik", (pano_veri.adet, m['siparis_kodu']))
-            stok = cur.fetchone()
-            if stok and (stok['mevcut_stok'] < stok['kritik_esik']):
-                cur.execute("INSERT INTO satin_alma_talepleri (proje_id, malzeme_kodu, talep_edilen_adet, durum) VALUES (%s, %s, %s, 'BEKLIYOR')", (pano_veri.proje_id, m['siparis_kodu'], pano_veri.adet))
-                sistem_log_ekle(cur, "ERP_SİSTEMİ", "OTOMATİK_SİPARİŞ", f"{m['urun_adi']} stoku kritik. Sipariş açıldı.")
+        # 2. ERP STOK ZEKASI (Doğrudan Malzemeler tablosundan düşüyoruz)
+        cur.execute("""
+            UPDATE malzemeler 
+            SET mevcut_stok = mevcut_stok - %s 
+            WHERE id = %s 
+            RETURNING siparis_kodu, urun_adi, mevcut_stok, kritik_esik
+        """, (pano_veri.adet, pano_veri.malzeme_id))
+        
+        yeni_stok = cur.fetchone()
+        
+        if yeni_stok and (yeni_stok['mevcut_stok'] < yeni_stok['kritik_esik']):
+            # Stok eşiğin altına düştü! Satın almaya uyarı gönderiyoruz.
+            # talep_edilen_adet kısmını 0 yapıyoruz ki satın almacı kendi karar verip kutucuğa yazsın.
+            cur.execute("""
+                INSERT INTO satin_alma_talepleri (proje_id, malzeme_kodu, talep_edilen_adet, durum) 
+                VALUES (%s, %s, 0, 'STOK_UYARISI')
+            """, (pano_veri.proje_id, yeni_stok['siparis_kodu']))
+            
+            sistem_log_ekle(cur, "ERP_SİSTEMİ", "STOK_ALARM", f"{yeni_stok['urun_adi']} kritik stok! (Kalan: {yeni_stok['mevcut_stok']})")
 
         sistem_log_ekle(cur, islem_yapan, "PANO_MALZEME_EKLE", f"Pano: {pano_veri.pano_turu}, Miktar: {pano_veri.adet}")
-    return {"mesaj": "Atandı ve stok güncellendi"}
+        
+    return {"mesaj": "Malzeme atandı ve stok güncellendi."}
 
 @router.put("/pano-malzeme-guncelle/{kayit_id}")
 def pano_malzeme_guncelle(kayit_id: int, yeni_veri: Dict[str, Any], islem_yapan: str = Header(default="Sistem", alias="islem-yapan")):

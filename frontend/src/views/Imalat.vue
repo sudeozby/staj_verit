@@ -19,11 +19,12 @@
         <!-- Filtreleme Alanı -->
         <div class="filtre-alani">
           <div class="input-grubu select-kutu">
+            <!-- DÜZELTME: MERKEZ_REVIZYON yerine veritabanındaki gerçek adı olan REVIZYONDA yazıldı -->
             <select v-model="seciliDurum">
               <option value="HEPSI">Tüm İş Emirleri</option>
               <option value="YENİ">⏳ Montaj Bekleyenler</option>
               <option value="MONTAJDA">🔧 Montajı Devam Edenler</option>
-              <option value="MERKEZ_REVIZYON">⚠️ Merkezde Revizyonda Olanlar</option>
+              <option value="REVIZYONDA">⚠️ Merkezde Revizyonda Olanlar</option>
               <option value="TAMAMLANDI">✅ Tamamlananlar</option>
             </select>
           </div>
@@ -51,14 +52,14 @@
                 <td colspan="6" class="bos-durum">Şu an size atanmış veya bu kritere uyan bir iş bulunmuyor.</td>
               </tr>
               
-              <tr v-for="proje in gruplanmisProjeler" :key="proje.proje_id" :class="{'kilitli-satir': aktifPanoGetir(proje).durum === 'MERKEZ_REVIZYON'}">
+              <!-- DÜZELTME: Kilitli satır CSS tetikleyicisi REVIZYONDA olarak güncellendi -->
+              <tr v-for="proje in gruplanmisProjeler" :key="proje.proje_id" :class="{'kilitli-satir': aktifPanoGetir(proje).durum === 'REVIZYONDA'}">
                 <td class="kod">#WORK-{{ proje.proje_id }}</td>
                 <td>
                   <div class="proje-adi">{{ proje.proje_adi }}</div>
                   <div class="proje-musteri">{{ proje.musteri }}</div>
                 </td>
                 
-                <!-- ARTIK BAĞIMSIZ VE CANLI HAFIZAYA (seciliPanolar) BAĞLI -->
                 <td>
                   <select v-model="seciliPanolar[proje.proje_id]" class="pano-secim-kutusu">
                     <option v-for="pano in proje.panolar" :key="pano.pano_turu" :value="pano.pano_turu">
@@ -72,7 +73,6 @@
                   <button @click="malzemeDetayGoster(proje.proje_id, seciliPanolar[proje.proje_id])" class="btn-link">Listeyi Gör</button>
                 </td>
                 
-                <!-- DURUM VE İŞLEM KUTUSU DİREKT SEÇİLİ PANOYA BAKIYOR -->
                 <td>
                   <span :class="['durum-rozeti', (aktifPanoGetir(proje).durum || 'yeni').toLowerCase()]">
                     {{ durumMetniGetir(aktifPanoGetir(proje).durum) }}
@@ -80,7 +80,8 @@
                 </td>
                 
                 <td class="islemler">
-                  <div v-if="aktifPanoGetir(proje).durum === 'MERKEZ_REVIZYON'" class="kilitli-uyari">
+                  <!-- DÜZELTME: REVIZYONDA ise dropdown gizlenir, kilit ekranı çıkar -->
+                  <div v-if="aktifPanoGetir(proje).durum === 'REVIZYONDA'" class="kilitli-uyari">
                     🔒 Ofis Onayı Bekleniyor
                   </div>
                   <div v-else-if="aktifPanoGetir(proje).durum === 'TAMAMLANDI'" class="kilitli-uyari yetki-yok">
@@ -108,7 +109,6 @@
 </template>
 
 <script setup>
-// YENİ: watch import edildi!
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import UstMenu from '../components/UstMenu.vue';
@@ -118,7 +118,6 @@ const isEmirleri = ref([]);
 const aramaMetni = ref('');
 const seciliDurum = ref('HEPSI');
 
-// YENİ: Hangi projenin hangi panosuna bakıldığını tutan canlı hafıza
 const seciliPanolar = ref({}); 
 
 const bekleyenIsSayisi = computed(() => isEmirleri.value.filter(i => i.durum === 'YENİ').length);
@@ -159,8 +158,6 @@ const gruplanmisProjeler = computed(() => {
   return sonuc;
 });
 
-// YENİ: Kullanıcı üstten filtre değiştirdiğinde ("Montajda olanlar" gibi), 
-// alt tablodaki pano seçimini otomatik olarak ona uygun panoya kaydırır!
 watch(seciliDurum, (yeniDurum) => {
   if (yeniDurum !== 'HEPSI') {
     gruplanmisProjeler.value.forEach(p => {
@@ -181,7 +178,6 @@ const isEmirleriniGetir = async () => {
     const res = await axios.get(`${API_BASE}/imalat/is-emirleri`);
     isEmirleri.value = res.data;
     
-    // Veriler gelince her proje için ilk panoyu "Seçili" olarak hafızaya yazıyoruz
     isEmirleri.value.forEach(isEmri => {
       if (!seciliPanolar.value[isEmri.proje_id]) {
         seciliPanolar.value[isEmri.proje_id] = isEmri.pano_turu;
@@ -194,7 +190,6 @@ const isEmirleriniGetir = async () => {
 };
 
 const aktifPanoGetir = (proje) => {
-  // Canlı hafızadan o projenin seçili panosunu bul
   const seciliTur = seciliPanolar.value[proje.proje_id];
   const pano = proje.panolar.find(p => p.pano_turu === seciliTur);
   return pano || proje.panolar[0] || { durum: 'YENİ' };
@@ -204,7 +199,7 @@ const durumMetniGetir = (durum) => {
   const durumlar = {
     'YENİ': '⏳ Montaj Bekliyor',
     'MONTAJDA': '🔧 Montajda',
-    'MERKEZ_REVIZYON': '⚠️ Merkezde Revizyonda',
+    'REVIZYONDA': '⚠️ Merkezde Revizyonda', // DÜZELTME
     'TAMAMLANDI': '✅ Tamamlandı'
   };
   return durumlar[durum] || durum;
@@ -272,9 +267,10 @@ const malzemeDetayGoster = (proje_id, pano_turu) => {
 }
 .pano-secim-kutusu:focus { border-color: #3b82f6; background: #fff; }
 
-.kilitli-satir td { background-color: #fffbeb !important; opacity: 0.8; }
-.kilitli-uyari { font-size: 11px; font-weight: 600; color: #d97706; }
-.yetki-yok { color: #94a3b8; }
+/* Kilitli Satır Görünümü */
+.kilitli-satir td { background-color: #fffbeb !important; opacity: 0.9; }
+.kilitli-uyari { font-size: 11px; font-weight: 600; color: #d97706; background: #fef3c7; padding: 6px 10px; border-radius: 4px; display: inline-block; border: 1px solid #fde68a; }
+.yetki-yok { color: #94a3b8; background: #f1f5f9; border-color: #e2e8f0; }
 
 .kod { font-family: monospace; color: #64748b; font-weight: 500; }
 .proje-adi { font-weight: 600; color: #0f172a; }
@@ -284,10 +280,11 @@ const malzemeDetayGoster = (proje_id, pano_turu) => {
 .malzeme-sayisi { font-weight: 600; color: #334155; font-size: 12px; }
 .btn-link { background: none; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; margin-top: 4px; text-decoration: underline; }
 
+/* Durum Rozetleri DÜZELTİLDİ */
 .durum-rozeti { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; border: 1px solid; }
 .durum-rozeti.yeni { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
 .durum-rozeti.montajda { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-.durum-rozeti.merkez_revizyon { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
+.durum-rozeti.revizyonda { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
 .durum-rozeti.tamamlandi { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
 
 .sag-hizali { text-align: right; }

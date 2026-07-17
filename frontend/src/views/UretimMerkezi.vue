@@ -39,16 +39,11 @@
                 <div class="ikili-sutun">
                   <div class="input-grubu">
                     <label>Müşteri Adı *</label>
-                    <!-- list özelliği eklendi -->
                     <input v-model="yeniProje.musteri" list="musteri-listesi" placeholder="Firma / Müşteri adı giriniz" required />
-                    
-                    <!-- Arama listesi eklendi -->
                     <datalist id="musteri-listesi">
                       <option v-for="m in musteriler" :key="m.id" :value="m.firma_adi"></option>
                     </datalist>
                   </div>
-                    
-
                   <div class="input-grubu">
                     <label>Son Kullanıcı</label>
                     <input v-model="yeniProje.son_kullanici" placeholder="Sistemi kullanacak asıl firma" />
@@ -142,9 +137,6 @@
                       <input v-model="yeniMalzeme.tedarikci" placeholder="Örn: X Elektrik A.Ş." />
                     </div>
                   </div>
-                  
-
-                  
 
                   <div class="ayrac">Stok ve Tedarik Parametreleri</div>
 
@@ -260,11 +252,14 @@
                   </select>
                 </div>
 
+                <!-- YENİ EKLENEN CANLI STOK GÖSTERGESİ -->
                 <div class="input-grubu">
-                  <label>Kullanılacak Malzeme</label>
+                  <label>Kullanılacak Malzeme (Canlı Stok Durumu)</label>
                   <select v-model="yeniPanoMalzeme.malzeme_id" class="vurgulu-select">
                     <option disabled value="">Malzemeyi Seçin...</option>
-                    <option v-for="m in malzemeler" :key="m.id" :value="m.id">{{ m.urun_adi }} ({{ m.siparis_kodu }})</option>
+                    <option v-for="m in malzemeler" :key="m.id" :value="m.id">
+                      {{ stokDurumGostergesi(m) }} {{ m.urun_adi }} (Stok: {{ m.mevcut_stok || 0 }})
+                    </option>
                   </select>
                 </div>
 
@@ -349,6 +344,17 @@ const projeler = ref([])
 const malzemeler = ref([])
 const musteriler = ref([])
 
+// YENİ EKLENEN: Stok Durumunu Analiz Eden ve Renkli İkon Döndüren Fonksiyon
+const stokDurumGostergesi = (m) => {
+  // Eğer veritabanından mevcut_stok henüz gelmiyorsa veya 0 ise hesaplamayı koruyalım
+  const stok = Number(m.mevcut_stok || 0);
+  const esik = Number(m.kritik_esik || 5);
+
+  if (stok < esik) return '🔴 Kritik:';
+  if (stok <= esik + (esik * 0.5)) return '🟡 Sınırda:'; // Eşiğe çok yakınsa (örn: eşik 10, stok 15'ten küçükse)
+  return '🟢 Uygun:';
+};
+
 const musterileriGetir = async () => {
   try {
     const res = await axios.get(`${API_BASE}/musteriler`)
@@ -369,10 +375,9 @@ const yeniMalzeme = ref({
   para_birimi: 'TRY', 
   notlar: '', 
   grup_iskonto_id: null,
-  // EKLENEN KRİTİK ALANLAR
   mevcut_stok: 0,
-  kritik_esik: 5, // Bu seviyenin altına düşünce otomatik talep açılacak
-  temin_suresi_gun: 0 // BOM analizindeki darboğaz hesabı için
+  kritik_esik: 5, 
+  temin_suresi_gun: 0 
 })
 
 const yeniProje = ref({ 
@@ -454,7 +459,8 @@ const malzemeEkle = async () => {
     bildirimGoster(res.data.mesaj || "Malzeme depoya eklendi! ✅")
     yeniMalzeme.value = { 
       siparis_kodu: '', urun_adi: '', marka: '', urun_grubu: '', tedarikci: '', 
-      liste_fiyati: null, para_birimi: 'TRY', grup_iskonto_id: null, notlar: '' 
+      liste_fiyati: null, para_birimi: 'TRY', grup_iskonto_id: null, notlar: '',
+      mevcut_stok: 0, kritik_esik: 5, temin_suresi_gun: 0 
     }
     await verileriYukle()
   } catch (error) { 
@@ -473,12 +479,14 @@ const panoyaEkle = async () => {
     })
     bildirimGoster(res.data.mesaj || `Başarıyla atandı: ${yeniPanoMalzeme.value.pano_turu} ✅`)
     
-    // Eksik olan malzeme ve konum sıfırlamalarını ekledik
     yeniPanoMalzeme.value.proje_id = '';
     yeniPanoMalzeme.value.malzeme_id = ''; 
     yeniPanoMalzeme.value.pano_turu = 'ADP 1'; 
     yeniPanoMalzeme.value.adet = 1;
     yeniPanoMalzeme.value.ozel_iskonto = 0;
+    
+    // Stok miktarının güncel kalması için listeyi tekrar çekelim
+    await verileriYukle();
   } catch (error) { 
     bildirimGoster(error.response?.data?.detail || "Malzeme panoya atanamadı!", true) 
   }

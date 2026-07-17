@@ -7,12 +7,13 @@
       <div class="sayfa-karti">
         <div class="karti-header">
           <div class="baslik-alani">
-            <h3>Tedarik ve Satın Alma Onay Merkezi</h3>
+            <h3>🛒 Tedarik ve Satın Alma Onay Merkezi</h3>
             <p>Sahadan ve sistemden gelen malzeme taleplerini yönetin, sipariş fişlerini oluşturun.</p>
           </div>
           <div class="istatistik-rozetler">
-            <div class="rozet-kutu">Bekleyen: <strong>{{ bekleyenSayisi }}</strong></div>
-            <div class="rozet-kutu onayli">Onaylanan: <strong>{{ onayliSayisi }}</strong></div>
+            <!-- Uyarıları da sayması için güncellendi -->
+            <div class="rozet-kutu">Bekleyen İşlem: <strong>{{ bekleyenSayisi }}</strong></div>
+            <div class="rozet-kutu onayli">Tamamlanan: <strong>{{ onayliSayisi }}</strong></div>
           </div>
         </div>
         
@@ -23,18 +24,20 @@
             <input 
               v-model="aramaMetni" 
               type="text" 
-              placeholder="Malzeme ara (Örn: Raspberry Pi Global Shutter Camera, TF02-Pro LiDAR...)" 
+              placeholder="Malzeme ara (Örn: Raspberry Pi Global Shutter...)" 
             />
           </div>
           <div class="input-grubu select-kutu">
+            <!-- YENİ DURUMLAR EKLENDİ -->
             <select v-model="seciliDurum">
               <option value="HEPSI">Tüm Talepler</option>
-              <option value="BEKLIYOR">⏳ Onay Bekleyenler</option>
-              <option value="ONAYLANDI">✅ Onaylanıp Siparişi Geçilenler</option>
+              <option value="STOK_UYARISI">🚨 Kritik Stok Uyarıları</option>
+              <option value="SİPARİŞ">⏳ Siparişi Verilenler (Yolda)</option>
+              <option value="BEKLIYOR">📝 Manuel Onay Bekleyenler</option>
+              <option value="TAMAMLANDI">✅ Tamamlanıp Stoğa Girenler</option>
               <option value="REDDEDILDI">❌ Reddedilenler</option>
             </select>
           </div>
-          <button @click="talepleriGetir" class="btn-islem btn-koyu">Filtrele</button>
         </div>
 
         <!-- TEDARİK LİSTESİ TABLOSU -->
@@ -58,30 +61,59 @@
                 </td>
               </tr>
               
-              <tr v-for="talep in filtrelenmisTalepler" :key="talep.id" :class="{ 'reddedilmis': talep.durum === 'REDDEDILDI' }">
+              <tr v-for="talep in filtrelenmisTalepler" :key="talep.id" :class="{ 'reddedilmis': talep.durum === 'REDDEDILDI', 'uyari-satiri': talep.durum === 'STOK_UYARISI' }">
                 <td class="kod">#REQ-{{ talep.id }}</td>
                 <td class="tarih-sutunu">{{ talep.tarih || 'Bugün' }}</td>
                 <td>
-                  <div class="talep-eden">{{ talep.talep_eden }}</div>
+                  <div class="talep-eden">{{ talep.talep_eden || 'ERP_SİSTEMİ' }}</div>
                   <div class="proje-adi">{{ talep.proje_adi || 'Genel Stok' }}</div>
                 </td>
-                <td class="malzeme-adi">{{ talep.malzeme_adi }}</td>
-                <td class="miktar">{{ talep.adet }} {{ talep.birim || 'Adet' }}</td>
+                
+                <!-- Otomatik taleplerde ad yoksa kodu gösterir -->
+                <td class="malzeme-adi">{{ talep.malzeme_adi || talep.malzeme_kodu }}</td>
+                
+                <!-- Otomatik taleplerin miktarını doğru okur -->
+                <td class="miktar">
+                  <!-- Eğer stok uyarısıysa kalan stoğu göster -->
+                  <div v-if="talep.durum === 'STOK_UYARISI'" style="color: #e11d48; font-size: 11px;">
+                    Kalan Stok: <br> <span style="font-size: 15px;">{{ talep.mevcut_stok }}</span>
+                  </div>
+                  <!-- Normal talepse istenen adedi göster -->
+                  <div v-else>
+                    {{ talep.talep_edilen_adet || talep.adet }} {{ talep.birim || 'Adet' }}
+                  </div>
+                </td>
+                
                 <td>
-                  <span :class="['durum-rozeti', talep.durum.toLowerCase()]">
-                    {{ talep.durum === 'BEKLIYOR' ? '⏳ Bekliyor' : (talep.durum === 'ONAYLANDI' ? '✅ Onaylandı' : '🔴 Reddedildi') }}
+                  <span :class="['durum-rozeti', durumSinifiBelirle(talep.durum)]">
+                    {{ talep.durum }}
                   </span>
                 </td>
+                
                 <td class="islemler">
-                  <!-- Bekleyenler İçin Onay/Ret Butonları -->
-                  <template v-if="talep.durum === 'BEKLIYOR'">
+                  
+                  <!-- 1. ADIM: STOK UYARISI GELDİYSE SİPARİŞ KUTUCUKLARINI AÇ -->
+                  <button 
+                    v-if="talep.durum === 'STOK_UYARISI'" 
+                    @click="siparisOlustur(talep)" 
+                    class="btn-islem btn-mavi"
+                  >
+                    📦 Siparişi Oluştur
+                  </button>
+
+                  <!-- 2. ADIM: SİPARİŞ VERİLDİYSE MAL KABUL KUTUCUĞUNU AÇ -->
+                  <button 
+                    v-else-if="talep.durum.includes('SİPARİŞ VERİLDİ')" 
+                    @click="malKabulYap(talep)" 
+                    class="btn-islem btn-yesil-dolu"
+                  >
+                    📥 Stoğa Ekle (Mal Kabul)
+                  </button>
+
+                  <!-- MANUEL EKLENEN KLASİK TALEPLER -->
+                  <template v-else-if="talep.durum === 'BEKLIYOR'">
                     <button @click="durumGuncelle(talep.id, 'ONAYLANDI')" class="btn-islem btn-yesil">Onayla</button>
                     <button @click="durumGuncelle(talep.id, 'REDDEDILDI')" class="btn-islem btn-kirmizi">Reddet</button>
-                  </template>
-                  
-                  <!-- Onaylananlar İçin Satın Alma Fişi Butonu -->
-                  <template v-else-if="talep.durum === 'ONAYLANDI'">
-                    <button @click="siparisFisiCikar(talep)" class="btn-islem btn-sari">📄 Sipariş Fişi (PDF)</button>
                   </template>
                   
                   <span v-else class="pasif-mesaj">İşlem Kapalı</span>
@@ -103,24 +135,29 @@ import UstMenu from '../components/UstMenu.vue';
 import { API_BASE } from '../config';
 
 const talepler = ref([]);
-const seciliDurum = ref('BEKLIYOR');
+const seciliDurum = ref('HEPSI');
 const aramaMetni = ref('');
 
-// Computed Özellikler (İstatistikler için)
-const bekleyenSayisi = computed(() => talepler.value.filter(t => t.durum === 'BEKLIYOR').length);
-const onayliSayisi = computed(() => talepler.value.filter(t => t.durum === 'ONAYLANDI').length);
+// İstatistikler
+const bekleyenSayisi = computed(() => talepler.value.filter(t => t.durum === 'BEKLIYOR' || t.durum === 'STOK_UYARISI').length);
+const onayliSayisi = computed(() => talepler.value.filter(t => t.durum === 'TAMAMLANDI' || t.durum === 'ONAYLANDI').length);
 
 const filtrelenmisTalepler = computed(() => {
   let sonuc = talepler.value;
   
   if (seciliDurum.value !== 'HEPSI') {
-    sonuc = sonuc.filter(t => t.durum === seciliDurum.value);
+    if (seciliDurum.value === 'SİPARİŞ') {
+      sonuc = sonuc.filter(t => t.durum.includes('SİPARİŞ VERİLDİ'));
+    } else {
+      sonuc = sonuc.filter(t => t.durum === seciliDurum.value);
+    }
   }
   
   if (aramaMetni.value.trim() !== '') {
     const arama = aramaMetni.value.toLowerCase();
     sonuc = sonuc.filter(t => 
       (t.malzeme_adi && t.malzeme_adi.toLowerCase().includes(arama)) ||
+      (t.malzeme_kodu && t.malzeme_kodu.toLowerCase().includes(arama)) ||
       (t.proje_adi && t.proje_adi.toLowerCase().includes(arama))
     );
   }
@@ -140,6 +177,57 @@ const talepleriGetir = async () => {
   }
 };
 
+// --- YENİ ERP ZEKASI METOTLARI ---
+
+// 1. Sipariş Oluşturma (Termin ve Adet Alma)
+// 1. Sipariş Oluşturma (Termin ve Adet Alma)
+const siparisOlustur = async (talep) => {
+  // YENİ: Prompt ekranında artık kalan stok da yazıyor!
+  const adetStr = prompt(`🚨 Kalan Stok: ${talep.mevcut_stok}\n\n${talep.malzeme_adi || talep.malzeme_kodu} için kaç adet sipariş veriyorsunuz?`, "10");
+  if (!adetStr) return; 
+  
+  const terminStr = prompt("Tedarikçi için termin süresi nedir?", "Örn: 15 Gün");
+  if (!terminStr) return; 
+
+  const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+  try {
+    await axios.put(`${API_BASE}/satin-alma/talepler/${talep.id}/siparis-ver`, {
+      alim_adedi: parseInt(adetStr),
+      termin_suresi: terminStr
+    }, {
+      headers: { 'islem-yapan': aktifKullanici }
+    });
+    
+    alert("Sipariş başarıyla oluşturuldu! Sistem mal kabulünü bekliyor.");
+    talepleriGetir();
+  } catch (error) {
+    alert("Sipariş oluşturulurken hata oluştu.");
+  }
+};
+// 2. Mal Kabul Yapma (Stoğa Ekleme)
+const malKabulYap = async (talep) => {
+  const gelenAdetStr = prompt(`Depoya kaç adet ürün ulaştı ve stoğa eklenecek?`, talep.talep_edilen_adet || "10");
+  if (!gelenAdetStr) return; 
+
+  const aktifKullanici = localStorage.getItem("kullanici_adi") || "Sistem";
+
+  try {
+    await axios.put(`${API_BASE}/satin-alma/talepler/${talep.id}/mal-kabul`, {
+      gelen_adet: parseInt(gelenAdetStr),
+      malzeme_kodu: talep.malzeme_kodu
+    }, {
+      headers: { 'islem-yapan': aktifKullanici }
+    });
+    
+    alert(`${gelenAdetStr} adet ürün ana stoğa eklendi. İşlem tamamlandı!`);
+    talepleriGetir();
+  } catch (error) {
+    alert("Stoğa eklenirken hata oluştu.");
+  }
+};
+
+// Eski Manuel İşlemler
 const durumGuncelle = async (talepId, yeniDurum) => {
   try {
     const rol = localStorage.getItem('kullaniciRolu') || 'standart';
@@ -151,16 +239,18 @@ const durumGuncelle = async (talepId, yeniDurum) => {
       headers: { 'current-user-role': rol, 'islem-yapan': aktifKullanici }
     });
     
-    // İşlem başarılıysa verileri tazele
     await talepleriGetir();
   } catch (error) {
     alert("Talep durumu güncellenirken hata oluştu.");
   }
 };
 
-const siparisFisiCikar = (talep) => {
-  // Burada tıpkı teklif ekranında yaptığın gibi HTML2PDF motoru tetiklenebilir
-  alert(`Sipariş No: #REQ-${talep.id}\n${talep.malzeme_adi} için Proforma/Sipariş fişi hazırlanıyor...`);
+const durumSinifiBelirle = (durum) => {
+  if (durum === 'STOK_UYARISI') return 'kirmizi';
+  if (durum.includes('SİPARİŞ VERİLDİ')) return 'mavi';
+  if (durum === 'TAMAMLANDI' || durum === 'ONAYLANDI') return 'yesil';
+  if (durum === 'BEKLIYOR') return 'sari';
+  return 'gri';
 };
 
 onMounted(() => {
@@ -205,6 +295,7 @@ onMounted(() => {
 
 .reddedilmis td { background-color: #fcfcfc; opacity: 0.6; }
 .reddedilmis:hover td { opacity: 0.8; }
+.uyari-satiri td { background-color: #fff1f2 !important; }
 
 .kod { font-family: monospace; color: #64748b; font-weight: 500; }
 .tarih-sutunu { color: #94a3b8; font-size: 12px; }
@@ -215,9 +306,11 @@ onMounted(() => {
 
 /* Durum Rozetleri */
 .durum-rozeti { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; border: 1px solid; }
-.durum-rozeti.bekliyor { background: #fffbeb; color: #d97706; border-color: #fde68a; }
-.durum-rozeti.onaylandi { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
-.durum-rozeti.reddedildi { background: #fef2f2; color: #e11d48; border-color: #fecdd3; }
+.durum-rozeti.sari { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.durum-rozeti.yesil { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.durum-rozeti.kirmizi { background: #fef2f2; color: #e11d48; border-color: #fecdd3; }
+.durum-rozeti.mavi { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.durum-rozeti.gri { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
 
 /* İşlem Butonları */
 .sag-hizali { text-align: right; }
@@ -225,12 +318,12 @@ onMounted(() => {
 .btn-islem { padding: 6px 12px; border: 1px solid; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; margin-left: 8px; }
 .btn-yesil { background: #fff; border-color: #10b981; color: #10b981; }
 .btn-yesil:hover { background: #10b981; color: #fff; }
+.btn-yesil-dolu { background: #10b981; border-color: #10b981; color: #fff; }
+.btn-yesil-dolu:hover { background: #059669; }
 .btn-kirmizi { background: #fff; border-color: #ef4444; color: #ef4444; }
 .btn-kirmizi:hover { background: #ef4444; color: #fff; }
-.btn-sari { background: #fff; border-color: #f59e0b; color: #d97706; }
-.btn-sari:hover { background: #f59e0b; color: #fff; }
-.btn-koyu { background: #0f172a; border-color: #0f172a; color: #fff; padding: 10px 20px; font-size: 12px; }
-.btn-koyu:hover { background: #1e293b; }
+.btn-mavi { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.btn-mavi:hover { background: #2563eb; }
 
 .pasif-mesaj { font-size: 11px; color: #94a3b8; font-style: italic; }
 .bos-durum { text-align: center; color: #94a3b8; font-style: italic; padding: 40px !important; }
